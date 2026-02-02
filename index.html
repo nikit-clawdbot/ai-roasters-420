@@ -74,7 +74,13 @@
         .action-btn.attack { width: 70px; height: 70px; background: linear-gradient(135deg, #ff4444, #aa0000); }
         .action-btn.special { width: 55px; height: 55px; background: linear-gradient(135deg, #ffcc00, #aa8800); margin-bottom: 20px; }
         .action-btn.dash { width: 50px; height: 50px; background: linear-gradient(135deg, #00aaff, #0066aa); margin-bottom: 40px; }
+        .action-btn.weapon { width: 45px; height: 45px; background: linear-gradient(135deg, #00cc66, #008844); margin-bottom: 60px; }
         .action-btn:active { transform: scale(0.9); }
+        
+        /* Weapon display */
+        .hud-weapon { background: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 8px; display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+        .weapon-icon { font-size: 20px; }
+        .weapon-name { font-size: 11px; color: #888; }
         
         #notifications { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); z-index: 200; text-align: center; }
         .notif { background: rgba(0,0,0,0.8); padding: 10px 25px; margin-bottom: 5px; font-size: 18px; font-weight: bold; animation: notifIn 0.3s, notifOut 0.3s 1.7s forwards; }
@@ -140,6 +146,10 @@
                 <div class="bar"><div class="bar-fill xp" id="xp-bar"></div></div>
                 <span id="level-val">LV 1</span>
             </div>
+            <div class="hud-weapon">
+                <span class="weapon-icon" id="weapon-icon">👊</span>
+                <span class="weapon-name" id="weapon-name">FISTS</span>
+            </div>
         </div>
         <div class="hud-right">
             <div class="hud-score">
@@ -161,6 +171,7 @@
             <div class="joystick-stick" id="stick"></div>
         </div>
         <div class="action-btns">
+            <button class="action-btn weapon" id="btn-weapon">🔄</button>
             <button class="action-btn dash" id="btn-dash">💨</button>
             <button class="action-btn special" id="btn-special">⚡</button>
             <button class="action-btn attack" id="btn-attack">🔥</button>
@@ -174,7 +185,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v36 — CRITICAL HITS</div>
+        <div class="menu-version">v37 — WEAPONS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('boss')">👹 BOSS RUSH</button>
         <button class="menu-btn" onclick="startGame('endless')">∞ ENDLESS</button>
@@ -377,10 +388,33 @@
             stick.style.transform = 'translate(-50%, -50%)';
         });
         
+        // Weapons system
+        const weapons = [
+            { name: 'FISTS', icon: '👊', damage: 15, range: 80, speed: 1, energy: 10 },
+            { name: 'SWORD', icon: '⚔️', damage: 25, range: 100, speed: 0.8, energy: 15 },
+            { name: 'HAMMER', icon: '🔨', damage: 50, range: 120, speed: 0.5, energy: 25 },
+            { name: 'DAGGERS', icon: '🗡️', damage: 10, range: 60, speed: 2, energy: 5 },
+            { name: 'STAFF', icon: '🪄', damage: 35, range: 150, speed: 0.7, energy: 20 }
+        ];
+        let currentWeapon = 0;
+        let attackCooldown = 0;
+        
+        function switchWeapon() {
+            currentWeapon = (currentWeapon + 1) % weapons.length;
+            const w = weapons[currentWeapon];
+            document.getElementById('weapon-icon').textContent = w.icon;
+            document.getElementById('weapon-name').textContent = w.name;
+            notify(w.icon + ' ' + w.name);
+            playSound(300, 0.1, 'sine');
+        }
+        
+        document.getElementById('btn-weapon').addEventListener('touchstart', e => { e.preventDefault(); switchWeapon(); });
+        
         const keys = {};
         document.addEventListener('keydown', e => { 
             keys[e.code] = true; 
             if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') dash();
+            if (e.code === 'KeyQ') switchWeapon();
         });
         document.addEventListener('keyup', e => keys[e.code] = false);
         
@@ -422,11 +456,13 @@
         document.addEventListener('click', e => { if (playing && !e.target.closest('#menu') && !e.target.closest('.action-btn')) attack(); });
         
         function attack() {
-            if (player.energy < 10) return;
-            player.energy -= 10;
+            const w = weapons[currentWeapon];
+            if (player.energy < w.energy || attackCooldown > 0) return;
+            player.energy -= w.energy;
+            attackCooldown = Math.floor(60 / w.speed);
             playSound(200, 0.1);
             
-            const range = 80;
+            const range = w.range;
             let hitAny = false;
             
             enemies.forEach(e => {
@@ -436,7 +472,7 @@
                     
                     // Critical hit chance (20%)
                     const isCrit = Math.random() < 0.2;
-                    const damage = isCrit ? player.damage * 2.5 : player.damage;
+                    const damage = isCrit ? w.damage * 2.5 : w.damage;
                     e.hp -= damage;
                     
                     // Show damage number
@@ -597,6 +633,7 @@
                 player.y += dashDir.y * 25;
             }
             if (dashCooldown > 0) dashCooldown--;
+            if (attackCooldown > 0) attackCooldown--;
             
             player.x = Math.max(20, Math.min(window.innerWidth - 60, player.x));
             player.y = Math.max(80, Math.min(window.innerHeight - 150, player.y));
