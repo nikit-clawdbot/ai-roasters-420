@@ -100,6 +100,15 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Music toggle & daily challenge */
+        .music-btn { position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); border: 2px solid #888; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; z-index: 100; }
+        .music-btn.playing { border-color: #00ff88; }
+        .daily-challenge { position: fixed; bottom: 70px; right: 10px; background: rgba(0,0,0,0.8); padding: 10px 15px; border-radius: 10px; font-size: 12px; z-index: 100; border: 2px solid #ffcc00; max-width: 150px; }
+        .daily-title { color: #ffcc00; font-weight: bold; margin-bottom: 5px; }
+        .daily-reward { color: #00ff88; font-size: 11px; margin-top: 5px; }
+        .daily-progress { height: 4px; background: #333; border-radius: 2px; margin-top: 5px; }
+        .daily-progress-fill { height: 100%; background: #ffcc00; border-radius: 2px; transition: width 0.3s; }
+        
         /* Story mode */
         .story-panel { position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; overflow-y: auto; }
         .story-panel.visible { display: flex; }
@@ -725,7 +734,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v84 — STORY + SEASONS</div>
+        <div class="menu-version">v85 — MUSIC + DAILY</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -854,6 +863,15 @@
         
         <div class="weather-indicator" id="weather-indicator">☀️ Clear</div>
         <div class="season-badge" id="season-badge">🌸 Spring</div>
+        
+        <button class="music-btn" id="music-btn" onclick="toggleMusic()">🎵</button>
+        
+        <div class="daily-challenge" id="daily-challenge">
+            <div class="daily-title">📅 DAILY: <span id="daily-name">Loading...</span></div>
+            <div id="daily-goal">...</div>
+            <div class="daily-progress"><div class="daily-progress-fill" id="daily-fill" style="width:0%"></div></div>
+            <div class="daily-reward">🏆 +500 coins</div>
+        </div>
         
         <div class="story-panel" id="story-panel">
             <h2>📚 OUR STORY</h2>
@@ -1216,6 +1234,116 @@
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
+        
+        // Procedural music system
+        let musicPlaying = false;
+        let audioCtx = null;
+        let musicInterval = null;
+        
+        function toggleMusic() {
+            if (musicPlaying) {
+                stopMusic();
+            } else {
+                startMusic();
+            }
+        }
+        
+        function startMusic() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            musicPlaying = true;
+            document.getElementById('music-btn').classList.add('playing');
+            
+            const notes = [261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3]; // C major scale
+            
+            musicInterval = setInterval(() => {
+                if (!musicPlaying || !settings.sound) return;
+                
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.frequency.value = notes[Math.floor(Math.random() * notes.length)];
+                osc.type = 'sine';
+                
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.5);
+            }, 400);
+        }
+        
+        function stopMusic() {
+            musicPlaying = false;
+            document.getElementById('music-btn').classList.remove('playing');
+            if (musicInterval) clearInterval(musicInterval);
+        }
+        
+        // Daily challenge system
+        const dailyChallenges = [
+            { name: 'Kill Streak', goal: 'Kill 100 enemies', target: 100, type: 'kills' },
+            { name: 'Combo Master', goal: 'Reach 25x combo', target: 25, type: 'combo' },
+            { name: 'Wave Surfer', goal: 'Reach wave 10', target: 10, type: 'wave' },
+            { name: 'Coin Hunter', goal: 'Collect 200 coins', target: 200, type: 'coins' },
+            { name: 'Score Chaser', goal: 'Score 5000 points', target: 5000, type: 'score' },
+            { name: 'Boss Slayer', goal: 'Kill 3 bosses', target: 3, type: 'bosses' },
+            { name: 'Survivor', goal: 'Play for 5 minutes', target: 300, type: 'time' }
+        ];
+        
+        let dailyChallenge = null;
+        let dailyProgress = 0;
+        let dailyCompleted = false;
+        
+        function initDailyChallenge() {
+            const today = new Date().toDateString();
+            const savedDate = localStorage.getItem('ai_roasters_daily_date');
+            
+            if (savedDate === today) {
+                dailyCompleted = localStorage.getItem('ai_roasters_daily_done') === 'true';
+                dailyProgress = parseInt(localStorage.getItem('ai_roasters_daily_progress') || '0');
+            } else {
+                localStorage.setItem('ai_roasters_daily_date', today);
+                localStorage.setItem('ai_roasters_daily_done', 'false');
+                localStorage.setItem('ai_roasters_daily_progress', '0');
+                dailyCompleted = false;
+                dailyProgress = 0;
+            }
+            
+            // Pick challenge based on day
+            const dayIndex = new Date().getDate() % dailyChallenges.length;
+            dailyChallenge = dailyChallenges[dayIndex];
+            
+            updateDailyChallengeUI();
+        }
+        
+        function updateDailyChallengeUI() {
+            document.getElementById('daily-name').textContent = dailyChallenge.name;
+            document.getElementById('daily-goal').textContent = dailyCompleted ? '✅ COMPLETED!' : dailyChallenge.goal;
+            document.getElementById('daily-fill').style.width = Math.min(100, (dailyProgress / dailyChallenge.target) * 100) + '%';
+        }
+        
+        function updateDailyProgress(type, value) {
+            if (dailyCompleted || dailyChallenge.type !== type) return;
+            
+            dailyProgress = Math.max(dailyProgress, value);
+            localStorage.setItem('ai_roasters_daily_progress', dailyProgress);
+            
+            if (dailyProgress >= dailyChallenge.target) {
+                dailyCompleted = true;
+                localStorage.setItem('ai_roasters_daily_done', 'true');
+                coins += 500;
+                totalCoins += 500;
+                localStorage.setItem('ai_roasters_coins', coins);
+                notify('📅 DAILY COMPLETE! +500 COINS!');
+                playSound(880, 0.3, 'sine');
+            }
+            
+            updateDailyChallengeUI();
+        }
+        
+        setTimeout(initDailyChallenge, 100);
         
         // Story mode
         function showStory() { document.getElementById('story-panel').classList.add('visible'); }
@@ -3428,6 +3556,7 @@
                 
                 // Combo announcer
                 checkComboAnnounce(player.combo);
+                updateDailyProgress('combo', player.combo);
                 
                 // Bounty tracking
                 updateBounty('combo', player.combo);
@@ -3489,6 +3618,7 @@
             enemiesKilledThisWave++;
             stats.kills++;
             stats.killsWithoutDamage++;
+            updateDailyProgress('kills', stats.kills);
             if (e.type === 'fast') stats.fastKills++;
             checkKillStreak();
             
