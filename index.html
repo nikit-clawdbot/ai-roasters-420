@@ -100,6 +100,17 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Gallery screen */
+        .gallery-panel { position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: none; z-index: 450; justify-content: center; align-items: flex-start; flex-direction: column; padding: 20px; overflow-y: auto; }
+        .gallery-panel.visible { display: flex; }
+        .gallery-panel h2 { color: #00ffff; font-size: 28px; margin-bottom: 20px; align-self: center; }
+        .gallery-section { margin: 15px 0; width: 100%; max-width: 500px; align-self: center; }
+        .gallery-section h3 { color: #ffcc00; font-size: 18px; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        .gallery-items { display: flex; flex-wrap: wrap; gap: 10px; }
+        .gallery-item { background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; text-align: center; min-width: 60px; }
+        .gallery-item-icon { font-size: 24px; }
+        .gallery-item-name { font-size: 10px; color: #888; margin-top: 5px; }
+        
         /* Credits screen */
         .credits-panel { position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
         .credits-panel.visible { display: flex; }
@@ -681,7 +692,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v80 — 80% MILESTONE 🎉</div>
+        <div class="menu-version">v81 — GALLERY</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -702,6 +713,7 @@
         <button class="menu-btn" onclick="showTrailShop()">🎨 TRAILS</button>
         <button class="menu-btn" onclick="showSettings()">⚙️ SETTINGS</button>
         <button class="menu-btn" onclick="showCredits()">👥 CREDITS</button>
+        <button class="menu-btn" onclick="showGallery()">📖 GALLERY</button>
         <button class="menu-btn prestige-btn" id="prestige-btn" onclick="prestige()">✨ PRESTIGE</button>
         
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
@@ -856,6 +868,71 @@
             <div class="credits-footer">Built with 💜 in February 2026</div>
             <div class="credits-footer">🐕 🤝 🔫</div>
             <button class="skill-close" onclick="closeCredits()">CLOSE</button>
+        </div>
+        
+        <div class="gallery-panel" id="gallery-panel">
+            <h2>📖 GAME GALLERY</h2>
+            
+            <div class="gallery-section">
+                <h3>⚔️ Weapons</h3>
+                <div class="gallery-items">
+                    <div class="gallery-item"><div class="gallery-item-icon">🔫</div><div class="gallery-item-name">Pistol</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">🔥</div><div class="gallery-item-name">Shotgun</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">⚡</div><div class="gallery-item-name">SMG</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">💥</div><div class="gallery-item-name">Rocket</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">❄️</div><div class="gallery-item-name">Freeze Ray</div></div>
+                </div>
+            </div>
+            
+            <div class="gallery-section">
+                <h3>👾 Enemies</h3>
+                <div class="gallery-items">
+                    <div class="gallery-item"><div class="gallery-item-icon">👾</div><div class="gallery-item-name">Basic</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">💀</div><div class="gallery-item-name">Fast</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">🤖</div><div class="gallery-item-name">Tank</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">👻</div><div class="gallery-item-name">Ghost</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">🔥</div><div class="gallery-item-name">Fire</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">👹</div><div class="gallery-item-name">Boss</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">👑</div><div class="gallery-item-name">King</div></div>
+                </div>
+            </div>
+            
+            <div class="gallery-section">
+                <h3>💊 Powerups</h3>
+                <div class="gallery-items">
+                    <div class="gallery-item"><div class="gallery-item-icon">❤️</div><div class="gallery-item-name">Health</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">💰</div><div class="gallery-item-name">Coins</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">⭐</div><div class="gallery-item-name">XP</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">🛡️</div><div class="gallery-item-name">Shield</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">⚔️</div><div class="gallery-item-name">Damage</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">💨</div><div class="gallery-item-name">Speed</div></div>
+                </div>
+            </div>
+            
+            <div class="gallery-section">
+                <h3>🐾 Pets</h3>
+                <div class="gallery-items">
+                    <div class="gallery-item"><div class="gallery-item-icon">🐕</div><div class="gallery-item-name">Robo-Dog</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">🐱</div><div class="gallery-item-name">Cyber-Cat</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">🐉</div><div class="gallery-item-name">Dragon</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">👻</div><div class="gallery-item-name">Phantom</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">🤖</div><div class="gallery-item-name">Battle Bot</div></div>
+                </div>
+            </div>
+            
+            <div class="gallery-section">
+                <h3>🎮 Game Modes</h3>
+                <div class="gallery-items">
+                    <div class="gallery-item"><div class="gallery-item-icon">▶️</div><div class="gallery-item-name">Normal</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">💀</div><div class="gallery-item-name">Hard</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">⏱️</div><div class="gallery-item-name">Time</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">👹</div><div class="gallery-item-name">Boss Rush</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">∞</div><div class="gallery-item-name">Endless</div></div>
+                    <div class="gallery-item"><div class="gallery-item-icon">🎯</div><div class="gallery-item-name">Challenge</div></div>
+                </div>
+            </div>
+            
+            <button class="skill-close" onclick="closeGallery()">CLOSE</button>
         </div>
     </div>
 
@@ -1052,6 +1129,10 @@
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
+        
+        // Gallery screen
+        function showGallery() { document.getElementById('gallery-panel').classList.add('visible'); }
+        function closeGallery() { document.getElementById('gallery-panel').classList.remove('visible'); }
         
         // Credits screen
         function showCredits() { document.getElementById('credits-panel').classList.add('visible'); }
