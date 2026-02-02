@@ -470,7 +470,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v59 — RANDOM EVENTS</div>
+        <div class="menu-version">v60 — 60% MILESTONE 🎉</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -689,6 +689,48 @@
         // Save coins on kill
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
+        }
+        
+        // Boss loot table
+        const bossLoot = [
+            { name: 'RARE COIN', icon: '💎', chance: 0.30, effect: () => { totalCoins += 100; saveTotalCoins(); notify('💎 +100 RARE COINS!'); } },
+            { name: 'WEAPON DROP', icon: '⚔️', chance: 0.20, effect: () => { player.damage += 15; notify('⚔️ +15 DAMAGE!'); } },
+            { name: 'SKIN UNLOCK', icon: '🎨', chance: 0.10, effect: () => { 
+                const locked = skins.filter(s => !unlockedSkins.includes(s.id));
+                if (locked.length > 0) {
+                    const skin = locked[Math.floor(Math.random() * locked.length)];
+                    unlockedSkins.push(skin.id);
+                    localStorage.setItem('ai_roasters_skins', JSON.stringify(unlockedSkins));
+                    notify('🎨 UNLOCKED ' + skin.name.toUpperCase() + ' SKIN!');
+                } else {
+                    totalCoins += 150; saveTotalCoins();
+                    notify('🎨 All skins owned! +150 coins!');
+                }
+            }},
+            { name: 'XP BOOST', icon: '✨', chance: 0.25, effect: () => { addXp(50); notify('✨ +50 XP BOOST!'); } },
+            { name: 'MAX HP', icon: '❤️', chance: 0.15, effect: () => { player.maxHealth += 10; player.health += 10; notify('❤️ +10 MAX HP!'); } }
+        ];
+        
+        function dropBossLoot() {
+            const roll = Math.random();
+            let cumulative = 0;
+            
+            for (const loot of bossLoot) {
+                cumulative += loot.chance;
+                if (roll < cumulative) {
+                    // Show loot popup
+                    const popup = document.createElement('div');
+                    popup.className = 'event-banner visible';
+                    popup.innerHTML = '<div class="event-icon">' + loot.icon + '</div><div class="event-text">' + loot.name + '!</div>';
+                    document.body.appendChild(popup);
+                    setTimeout(() => popup.remove(), 2500);
+                    
+                    loot.effect();
+                    playSound(660, 0.3, 'sine');
+                    playSound(880, 0.3, 'sine');
+                    return;
+                }
+            }
         }
         
         // Random events
@@ -1436,6 +1478,7 @@
                     player.score += 500 * wave;
                     stats.bossKills++;
                     notify('👹 BOSS DESTROYED!');
+                    dropBossLoot(); // Boss loot!
                     boss = null;
                     document.getElementById('boss-hud').classList.remove('visible');
                 }
@@ -1549,6 +1592,7 @@
                         player.xp += 100;
                         notify('👹 BOSS DEFEATED! +' + (500 * wave));
                         playSound(523, 0.3, 'sine');
+                        dropBossLoot(); // Boss loot!
                         boss = null;
                         document.getElementById('boss-hud').classList.remove('visible');
                         stats.bossKills++;
