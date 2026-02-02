@@ -100,6 +100,16 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Combo announcer */
+        .combo-announce { position: fixed; top: 30%; left: 50%; transform: translateX(-50%); font-size: 48px; font-weight: bold; z-index: 400; pointer-events: none; text-shadow: 0 0 20px currentColor; animation: comboAnnounce 1s ease-out forwards; }
+        @keyframes comboAnnounce { 0% { transform: translateX(-50%) scale(0.5); opacity: 0; } 20% { transform: translateX(-50%) scale(1.2); opacity: 1; } 80% { transform: translateX(-50%) scale(1); opacity: 1; } 100% { transform: translateX(-50%) scale(1); opacity: 0; } }
+        .combo-5 { color: #ffcc00; }
+        .combo-10 { color: #ff6600; }
+        .combo-15 { color: #ff0066; }
+        .combo-20 { color: #aa00ff; }
+        .combo-30 { color: #00ffff; }
+        .combo-50 { color: #ff0000; text-shadow: 0 0 30px #ff0000, 0 0 60px #ff0000; }
+        
         /* Screen effects */
         .crit-flash { position: fixed; inset: 0; background: rgba(255,255,0,0.3); pointer-events: none; z-index: 500; animation: critFlash 0.15s ease-out forwards; }
         @keyframes critFlash { to { opacity: 0; } }
@@ -595,7 +605,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v73 — JUICY EFFECTS</div>
+        <div class="menu-version">v74 — COMBO ANNOUNCER</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -899,6 +909,45 @@
         // Save coins on kill
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
+        }
+        
+        // Combo announcer
+        const comboMilestones = [
+            { combo: 5, text: '🔥 COMBO x5', className: 'combo-5' },
+            { combo: 10, text: '💀 KILLING SPREE!', className: 'combo-10' },
+            { combo: 15, text: '🎯 DOMINATING!', className: 'combo-15' },
+            { combo: 20, text: '⚡ GODLIKE!', className: 'combo-20' },
+            { combo: 30, text: '💥 UNSTOPPABLE!', className: 'combo-30' },
+            { combo: 50, text: '🔥 LEGENDARY!', className: 'combo-50' }
+        ];
+        let lastComboAnnounce = 0;
+        
+        function checkComboAnnounce(combo) {
+            for (let i = comboMilestones.length - 1; i >= 0; i--) {
+                const m = comboMilestones[i];
+                if (combo >= m.combo && lastComboAnnounce < m.combo) {
+                    showComboAnnounce(m.text, m.className);
+                    lastComboAnnounce = m.combo;
+                    break;
+                }
+            }
+        }
+        
+        function showComboAnnounce(text, className) {
+            const el = document.createElement('div');
+            el.className = 'combo-announce ' + className;
+            el.textContent = text;
+            document.body.appendChild(el);
+            
+            playSound(440, 0.2, 'sine');
+            playSound(660, 0.2, 'sine');
+            playSound(880, 0.2, 'sine');
+            
+            setTimeout(() => el.remove(), 1000);
+        }
+        
+        function resetComboAnnounce() {
+            lastComboAnnounce = 0;
         }
         
         // Juicy screen effects
@@ -2529,6 +2578,9 @@
                 player.comboTimer = 2;
                 playSound(100 + player.combo * 10, 0.1, 'sawtooth');
                 
+                // Combo announcer
+                checkComboAnnounce(player.combo);
+                
                 // Bounty tracking
                 updateBounty('combo', player.combo);
                 updateBounty('score', player.score);
@@ -2792,7 +2844,7 @@
             // Combo decay
             if (player.comboTimer > 0) {
                 player.comboTimer -= 0.016;
-                if (player.comboTimer <= 0) player.combo = 0;
+                if (player.comboTimer <= 0) { player.combo = 0; resetComboAnnounce(); }
             }
             updateComboDisplay();
             
