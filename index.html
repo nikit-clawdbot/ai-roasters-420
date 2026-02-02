@@ -401,6 +401,7 @@
                         playSound(523, 0.3, 'sine');
                         boss = null;
                         document.getElementById('boss-hud').classList.remove('visible');
+                        stats.bossKills++;
                         checkLevelUp();
                     }
                 }
@@ -420,6 +421,9 @@
             player.score += e.score * (1 + Math.floor(player.combo / 5));
             player.xp += e.xp;
             enemiesKilledThisWave++;
+            stats.kills++;
+            stats.killsWithoutDamage++;
+            if (e.type === 'fast') stats.fastKills++;
             
             setTimeout(() => {
                 e.el.remove();
@@ -546,6 +550,7 @@
                     e.el.style.top = e.y + 'px';
                 } else if (!player.shield) {
                     player.health -= e.damage * 0.016;
+                    stats.killsWithoutDamage = 0;
                     if (Math.random() < 0.02) {
                         document.getElementById('damage-flash').classList.add('visible');
                         setTimeout(() => document.getElementById('damage-flash').classList.remove('visible'), 200);
@@ -613,6 +618,7 @@
                     c.el.classList.add('collected');
                     player.score += 10;
                     player.xp += 2;
+                    stats.coinsCollected++;
                     playSound(880, 0.1, 'sine');
                     setTimeout(() => { c.el.remove(); spawnCoin(); }, 300);
                 }
@@ -632,7 +638,7 @@
                     else if (p.type === 'speed') { player.speed += 1; notify('💨 SPEED UP!'); }
                     else if (p.type === 'damage') { player.damage += 10; notify('💥 DAMAGE UP!'); }
                     else if (p.type === 'shield') { player.shield = true; player.shieldTimer = 10; notify('🛡️ SHIELD!'); }
-                    
+                    stats.powerupsCollected++;
                     playSound(660, 0.15, 'sine');
                 }
             });
@@ -656,6 +662,62 @@
             player.x = Math.min(player.x, window.innerWidth - 60);
             player.y = Math.min(player.y, window.innerHeight - 150);
         });
+        
+        // ==================== ACHIEVEMENTS SYSTEM ====================
+        const achievements = {
+            firstBlood: { name: 'FIRST BLOOD', desc: 'Kill your first enemy', icon: '🩸' },
+            serialRoaster: { name: 'SERIAL ROASTER', desc: 'Kill 10 enemies', icon: '🔥' },
+            massacre: { name: 'MASSACRE', desc: 'Kill 100 enemies', icon: '💀' },
+            bossSlayer: { name: 'BOSS SLAYER', desc: 'Defeat a boss', icon: '👹' },
+            survivor: { name: 'SURVIVOR', desc: 'Survive 5 minutes', icon: '⏱️' },
+            coinMaster: { name: 'COIN MASTER', desc: 'Collect 50 coins', icon: '💰' },
+            highRoller: { name: 'HIGH ROLLER', desc: 'Score 1000 points', icon: '🎰' },
+            comboKing: { name: 'COMBO KING', desc: 'Get 5x combo', icon: '⚡' },
+            waveMaster: { name: 'WAVE MASTER', desc: 'Reach wave 10', icon: '🌊' },
+            powerHungry: { name: 'POWER HUNGRY', desc: 'Collect 10 powerups', icon: '💪' },
+            untouchable: { name: 'UNTOUCHABLE', desc: 'Kill 20 enemies without damage', icon: '🛡️' },
+            speedDemon: { name: 'SPEED DEMON', desc: 'Kill 5 fast enemies', icon: '💨' }
+        };
+        
+        let stats = { kills: 0, bossKills: 0, coinsCollected: 0, powerupsCollected: 0, fastKills: 0, killsWithoutDamage: 0, gameTime: 0 };
+        let unlockedAchievements = JSON.parse(localStorage.getItem('ai_roasters_achievements') || '[]');
+        
+        function checkAchievements() {
+            if (stats.kills >= 1) unlock('firstBlood');
+            if (stats.kills >= 10) unlock('serialRoaster');
+            if (stats.kills >= 100) unlock('massacre');
+            if (stats.bossKills >= 1) unlock('bossSlayer');
+            if (stats.gameTime >= 300) unlock('survivor');
+            if (stats.coinsCollected >= 50) unlock('coinMaster');
+            if (player.score >= 1000) unlock('highRoller');
+            if (player.combo >= 5) unlock('comboKing');
+            if (wave >= 10) unlock('waveMaster');
+            if (stats.powerupsCollected >= 10) unlock('powerHungry');
+            if (stats.killsWithoutDamage >= 20) unlock('untouchable');
+            if (stats.fastKills >= 5) unlock('speedDemon');
+        }
+        
+        function unlock(id) {
+            if (unlockedAchievements.includes(id)) return;
+            unlockedAchievements.push(id);
+            localStorage.setItem('ai_roasters_achievements', JSON.stringify(unlockedAchievements));
+            
+            const a = achievements[id];
+            const n = document.createElement('div');
+            n.className = 'notif';
+            n.textContent = '🏆 ' + a.icon + ' ' + a.name + '!';
+            n.style.color = '#ffcc00';
+            n.style.background = 'linear-gradient(90deg, transparent, rgba(255,204,0,0.2), transparent)';
+            document.getElementById('notifications').appendChild(n);
+            setTimeout(() => n.remove(), 3000);
+            
+            playSound(523, 0.15, 'sine');
+            playSound(659, 0.15, 'sine');
+            playSound(784, 0.15, 'sine');
+        }
+        
+        // Track stats in game loop
+        setInterval(() => { if (playing) { stats.gameTime++; checkAchievements(); } }, 1000);
     </script>
 </body>
 </html>
