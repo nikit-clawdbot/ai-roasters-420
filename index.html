@@ -93,6 +93,25 @@
         .damage-num { position: absolute; font-weight: bold; pointer-events: none; animation: damageFloat 0.8s forwards; z-index: 200; text-shadow: 2px 2px 0 #000; }
         .damage-num.normal { font-size: 16px; color: #fff; }
         .damage-num.crit { font-size: 24px; color: #ffcc00; }
+        /* Sound toggle */
+        .sound-toggle { position: fixed; top: 10px; right: 10px; width: 40px; height: 40px; background: rgba(0,0,0,0.7); border: 2px solid #666; border-radius: 8px; font-size: 20px; cursor: pointer; z-index: 150; }
+        .sound-toggle:hover { border-color: #fff; }
+        .sound-toggle.muted { opacity: 0.5; }
+        
+        /* Stats overlay */
+        .stats-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 400; justify-content: center; align-items: center; flex-direction: column; }
+        .stats-overlay.visible { display: flex; }
+        .stats-box { background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 30px 40px; border-radius: 15px; border: 2px solid #ff4444; text-align: center; max-width: 300px; }
+        .stats-title { font-size: 24px; color: #ff4444; margin-bottom: 20px; }
+        .stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .stat-label { color: #888; }
+        .stat-value { color: #fff; font-weight: bold; }
+        .stats-close { margin-top: 20px; padding: 10px 30px; background: #ff4444; border: none; border-radius: 8px; color: #fff; font-weight: bold; cursor: pointer; }
+        
+        /* Particle explosions */
+        .particle { position: absolute; pointer-events: none; border-radius: 50%; }
+        @keyframes particleFade { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0); } }
+        
         /* Daily challenge */
         .daily-challenge { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 8px 15px; border-radius: 8px; border: 1px solid #ffcc00; z-index: 100; text-align: center; pointer-events: none; }
         .daily-title { font-size: 10px; color: #ffcc00; letter-spacing: 2px; }
@@ -234,6 +253,22 @@
         </div>
     </div>
     
+    <button class="sound-toggle" id="sound-toggle" onclick="toggleSound()">🔊</button>
+    
+    <div class="stats-overlay" id="stats-overlay">
+        <div class="stats-box">
+            <div class="stats-title">📊 LIFETIME STATS</div>
+            <div class="stat-row"><span class="stat-label">Total Kills</span><span class="stat-value" id="stat-kills">0</span></div>
+            <div class="stat-row"><span class="stat-label">Boss Kills</span><span class="stat-value" id="stat-bosses">0</span></div>
+            <div class="stat-row"><span class="stat-label">Coins Collected</span><span class="stat-value" id="stat-coins">0</span></div>
+            <div class="stat-row"><span class="stat-label">Powerups Used</span><span class="stat-value" id="stat-powerups">0</span></div>
+            <div class="stat-row"><span class="stat-label">Best Wave</span><span class="stat-value" id="stat-wave">0</span></div>
+            <div class="stat-row"><span class="stat-label">Best Score</span><span class="stat-value" id="stat-score">0</span></div>
+            <div class="stat-row"><span class="stat-label">Play Time</span><span class="stat-value" id="stat-time">0m</span></div>
+            <button class="stats-close" onclick="closeStats()">CLOSE</button>
+        </div>
+    </div>
+    
     <div id="notifications"></div>
     <div id="damage-flash"></div>
     <div id="union-strike"></div>
@@ -249,11 +284,12 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v42 — DAILY CHALLENGES</div>
+        <div class="menu-version">v43 — SOUND + STATS + PARTICLES</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('boss')">👹 BOSS RUSH</button>
         <button class="menu-btn" onclick="startGame('endless')">∞ ENDLESS</button>
+        <button class="menu-btn" onclick="showStats()">📊 STATS</button>
     </div>
 
     <script>
@@ -293,7 +329,23 @@
         
         // Audio
         let audioCtx;
+        let soundEnabled = localStorage.getItem('ai_roasters_sound') !== 'off';
+        updateSoundButton();
+        
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            localStorage.setItem('ai_roasters_sound', soundEnabled ? 'on' : 'off');
+            updateSoundButton();
+        }
+        
+        function updateSoundButton() {
+            const btn = document.getElementById('sound-toggle');
+            btn.textContent = soundEnabled ? '🔊' : '🔇';
+            btn.classList.toggle('muted', !soundEnabled);
+        }
+        
         function playSound(freq, dur, type = 'square') {
+            if (!soundEnabled) return;
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -305,6 +357,58 @@
             gain.connect(audioCtx.destination);
             osc.start();
             osc.stop(audioCtx.currentTime + dur);
+        }
+        
+        // Lifetime stats
+        const lifetimeStats = JSON.parse(localStorage.getItem('ai_roasters_lifetime') || '{"kills":0,"bosses":0,"coins":0,"powerups":0,"bestWave":0,"bestScore":0,"playTime":0}');
+        
+        function updateLifetimeStats() {
+            lifetimeStats.kills += stats.kills;
+            lifetimeStats.bosses += stats.bossKills;
+            lifetimeStats.coins += stats.coinsCollected;
+            lifetimeStats.powerups += stats.powerupsUsed;
+            if (wave > lifetimeStats.bestWave) lifetimeStats.bestWave = wave;
+            if (player.score > lifetimeStats.bestScore) lifetimeStats.bestScore = player.score;
+            lifetimeStats.playTime += stats.gameTime;
+            localStorage.setItem('ai_roasters_lifetime', JSON.stringify(lifetimeStats));
+        }
+        
+        function showStats() {
+            document.getElementById('stat-kills').textContent = lifetimeStats.kills;
+            document.getElementById('stat-bosses').textContent = lifetimeStats.bosses;
+            document.getElementById('stat-coins').textContent = lifetimeStats.coins;
+            document.getElementById('stat-powerups').textContent = lifetimeStats.powerups;
+            document.getElementById('stat-wave').textContent = lifetimeStats.bestWave;
+            document.getElementById('stat-score').textContent = lifetimeStats.bestScore;
+            document.getElementById('stat-time').textContent = Math.floor(lifetimeStats.playTime / 60) + 'm';
+            document.getElementById('stats-overlay').classList.add('visible');
+        }
+        
+        function closeStats() {
+            document.getElementById('stats-overlay').classList.remove('visible');
+        }
+        
+        // Particle explosions
+        function spawnParticles(x, y, color, count = 8) {
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                p.style.width = '6px';
+                p.style.height = '6px';
+                p.style.background = color;
+                
+                const angle = (i / count) * Math.PI * 2;
+                const speed = 30 + Math.random() * 20;
+                const dx = Math.cos(angle) * speed;
+                const dy = Math.sin(angle) * speed;
+                
+                p.style.animation = 'particleFade 0.5s forwards';
+                p.style.transform = `translate(${dx}px, ${dy}px)`;
+                document.getElementById('game').appendChild(p);
+                setTimeout(() => p.remove(), 500);
+            }
         }
         
         function startGame(mode) {
@@ -669,6 +773,7 @@
             player.score += e.score * (1 + Math.floor(player.combo / 5));
             player.xp += e.xp;
             showXpParticle(e.x, e.y, e.xp);
+            spawnParticles(e.x, e.y, '#ff00ff', 10);
             enemiesKilledThisWave++;
             stats.kills++;
             stats.killsWithoutDamage++;
