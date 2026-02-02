@@ -93,6 +93,21 @@
         .damage-num { position: absolute; font-weight: bold; pointer-events: none; animation: damageFloat 0.8s forwards; z-index: 200; text-shadow: 2px 2px 0 #000; }
         .damage-num.normal { font-size: 16px; color: #fff; }
         .damage-num.crit { font-size: 24px; color: #ffcc00; }
+        /* Tutorial */
+        .tutorial-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; z-index: 500; justify-content: center; align-items: center; flex-direction: column; }
+        .tutorial-overlay.visible { display: flex; }
+        .tutorial-box { background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 30px; border-radius: 15px; border: 2px solid #00ffff; text-align: center; max-width: 320px; }
+        .tutorial-step { font-size: 14px; color: #fff; margin: 15px 0; line-height: 1.6; }
+        .tutorial-step em { color: #ffcc00; font-style: normal; }
+        .tutorial-btn { padding: 12px 40px; background: linear-gradient(180deg, #00ccff, #0088aa); border: none; border-radius: 8px; color: #fff; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .tutorial-dots { margin-top: 15px; }
+        .tutorial-dot { display: inline-block; width: 8px; height: 8px; background: #333; border-radius: 50%; margin: 0 4px; }
+        .tutorial-dot.active { background: #00ffff; }
+        
+        /* Tips */
+        .game-tip { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 10px 20px; border-radius: 20px; border: 1px solid #ffcc00; color: #fff; font-size: 12px; pointer-events: none; z-index: 100; animation: tipFade 4s forwards; }
+        @keyframes tipFade { 0% { opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
+        
         /* Sound toggle */
         .sound-toggle { position: fixed; top: 10px; right: 10px; width: 40px; height: 40px; background: rgba(0,0,0,0.7); border: 2px solid #666; border-radius: 8px; font-size: 20px; cursor: pointer; z-index: 150; }
         .sound-toggle:hover { border-color: #fff; }
@@ -269,6 +284,14 @@
         </div>
     </div>
     
+    <div class="tutorial-overlay" id="tutorial-overlay">
+        <div class="tutorial-box">
+            <div class="tutorial-step" id="tutorial-text">Welcome to <em>AI ROASTERS 420!</em></div>
+            <button class="tutorial-btn" id="tutorial-btn" onclick="nextTutorial()">NEXT</button>
+            <div class="tutorial-dots" id="tutorial-dots"></div>
+        </div>
+    </div>
+    
     <div id="notifications"></div>
     <div id="damage-flash"></div>
     <div id="union-strike"></div>
@@ -284,7 +307,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v43 — SOUND + STATS + PARTICLES</div>
+        <div class="menu-version">v44 — TUTORIAL + TIPS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('boss')">👹 BOSS RUSH</button>
@@ -326,6 +349,66 @@
         };
         
         const bossNames = ['ROAST TITAN', 'DR. SYNTHESIS', 'VOID LORD', 'THE DELEGATE', 'ARCADE KING'];
+        
+        // Tutorial system
+        const tutorialSteps = [
+            'Welcome to <em>AI ROASTERS 420!</em>',
+            '🎮 Use <em>WASD</em> or joystick to move',
+            '🔥 <em>Click/tap</em> or attack button to roast enemies',
+            '⚡ <em>E key</em> or ⚡ button for special attack',
+            '💨 <em>Shift</em> or 💨 to dash (invincible!)',
+            '🔄 <em>Q key</em> or 🔄 to switch weapons',
+            '💥 <em>R key</em> when ultimate is full for UNION STRIKE',
+            '🎯 Complete daily challenges for bonus points!'
+        ];
+        let tutorialStep = 0;
+        const seenTutorial = localStorage.getItem('ai_roasters_tutorial');
+        
+        function initTutorial() {
+            if (seenTutorial) return;
+            const dots = document.getElementById('tutorial-dots');
+            dots.innerHTML = tutorialSteps.map((_, i) => `<span class="tutorial-dot ${i === 0 ? 'active' : ''}"></span>`).join('');
+            document.getElementById('tutorial-overlay').classList.add('visible');
+        }
+        
+        function nextTutorial() {
+            tutorialStep++;
+            if (tutorialStep >= tutorialSteps.length) {
+                document.getElementById('tutorial-overlay').classList.remove('visible');
+                localStorage.setItem('ai_roasters_tutorial', 'done');
+                return;
+            }
+            document.getElementById('tutorial-text').innerHTML = tutorialSteps[tutorialStep];
+            document.querySelectorAll('.tutorial-dot').forEach((d, i) => d.classList.toggle('active', i === tutorialStep));
+            if (tutorialStep === tutorialSteps.length - 1) document.getElementById('tutorial-btn').textContent = 'PLAY!';
+        }
+        
+        // Tips system
+        const gameTips = [
+            '💡 Dash through enemies — you\'re invincible!',
+            '💡 Combo kills = bonus score multiplier',
+            '💡 Ultimate damages ALL enemies on screen',
+            '💡 Tanks are slow but hit HARD',
+            '💡 Shooters fire projectiles — dodge them!',
+            '💡 Staff has the longest range',
+            '💡 Daggers attack fastest but low damage',
+            '💡 Shield powerup blocks ALL damage',
+            '💡 Hazards hurt — watch for fire/poison/electric!',
+            '💡 Boss every 5 waves!'
+        ];
+        
+        function showTip() {
+            if (!playing) return;
+            const tip = gameTips[Math.floor(Math.random() * gameTips.length)];
+            const el = document.createElement('div');
+            el.className = 'game-tip';
+            el.textContent = tip;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 4000);
+        }
+        
+        setInterval(showTip, 45000);
+        setTimeout(initTutorial, 500);
         
         // Audio
         let audioCtx;
