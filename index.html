@@ -564,6 +564,11 @@
     </div>
 
     <script>
+        // Version tracker
+        const VERSION = 'v7';
+        console.log(`%c AI ROASTERS LOCAL 420 ${VERSION} `, 'background: #FF0000; color: white; font-size: 20px; padding: 10px;');
+        console.log('%c 🐕🤝🔫 ', 'font-size: 40px;');
+        
         // Custom cursor
         const cursor = document.createElement('div');
         cursor.className = 'cursor';
@@ -572,12 +577,25 @@
         document.body.appendChild(cursor);
         document.body.appendChild(cursorDot);
         
+        let cursorX = 0, cursorY = 0;
+        let dotX = 0, dotY = 0;
+        
         document.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX - 10 + 'px';
-            cursor.style.top = e.clientY - 10 + 'px';
-            cursorDot.style.left = e.clientX - 2 + 'px';
-            cursorDot.style.top = e.clientY - 2 + 'px';
+            cursorX = e.clientX;
+            cursorY = e.clientY;
         });
+        
+        // Smooth cursor follow
+        function animateCursor() {
+            dotX += (cursorX - dotX) * 0.2;
+            dotY += (cursorY - dotY) * 0.2;
+            cursor.style.left = dotX - 10 + 'px';
+            cursor.style.top = dotY - 10 + 'px';
+            cursorDot.style.left = cursorX - 2 + 'px';
+            cursorDot.style.top = cursorY - 2 + 'px';
+            requestAnimationFrame(animateCursor);
+        }
+        animateCursor();
         
         document.querySelectorAll('a, button, .shake, .brutal-box').forEach(el => {
             el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
@@ -611,17 +629,37 @@
         document.body.appendChild(nav);
         
         // Update active section
+        let currentSection = 0;
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
-                    const index = Array.from(sections).indexOf(entry.target);
+                    currentSection = Array.from(sections).indexOf(entry.target);
                     document.querySelectorAll('.section-dot').forEach((dot, i) => {
-                        dot.classList.toggle('active', i === index);
+                        dot.classList.toggle('active', i === currentSection);
                     });
                 }
             });
         }, { threshold: 0.5 });
         sections.forEach(section => observer.observe(section));
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' || e.key === 'j') {
+                e.preventDefault();
+                const next = Math.min(currentSection + 1, sections.length - 1);
+                sections[next].scrollIntoView({ behavior: 'smooth' });
+            } else if (e.key === 'ArrowUp' || e.key === 'k') {
+                e.preventDefault();
+                const prev = Math.max(currentSection - 1, 0);
+                sections[prev].scrollIntoView({ behavior: 'smooth' });
+            } else if (e.key === 'Home') {
+                e.preventDefault();
+                sections[0].scrollIntoView({ behavior: 'smooth' });
+            } else if (e.key === 'End') {
+                e.preventDefault();
+                sections[sections.length - 1].scrollIntoView({ behavior: 'smooth' });
+            }
+        });
         
         // Konami code
         const konami = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','KeyB','KeyA'];
@@ -691,6 +729,16 @@
             el.style.transition = 'opacity 0.6s, transform 0.6s';
             revealObserver.observe(el);
         });
+        
+        // Typing effect for hero (subtle)
+        const heroTitle = document.querySelector('h1');
+        if (heroTitle) {
+            heroTitle.style.opacity = '0';
+            setTimeout(() => {
+                heroTitle.style.opacity = '1';
+                heroTitle.style.transition = 'opacity 1s';
+            }, 300);
+        }
     </script>
 
 </body>
