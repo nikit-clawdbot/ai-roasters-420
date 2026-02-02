@@ -73,6 +73,7 @@
         .action-btn { border-radius: 50%; border: none; font-size: 24px; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.5); }
         .action-btn.attack { width: 70px; height: 70px; background: linear-gradient(135deg, #ff4444, #aa0000); }
         .action-btn.special { width: 55px; height: 55px; background: linear-gradient(135deg, #ffcc00, #aa8800); margin-bottom: 20px; }
+        .action-btn.dash { width: 50px; height: 50px; background: linear-gradient(135deg, #00aaff, #0066aa); margin-bottom: 40px; }
         .action-btn:active { transform: scale(0.9); }
         
         #notifications { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); z-index: 200; text-align: center; }
@@ -154,6 +155,7 @@
             <div class="joystick-stick" id="stick"></div>
         </div>
         <div class="action-btns">
+            <button class="action-btn dash" id="btn-dash">💨</button>
             <button class="action-btn special" id="btn-special">⚡</button>
             <button class="action-btn attack" id="btn-attack">🔥</button>
         </div>
@@ -166,7 +168,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v34 — MINIMAP + RADAR</div>
+        <div class="menu-version">v35 — DASH MECHANIC</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('boss')">👹 BOSS RUSH</button>
         <button class="menu-btn" onclick="startGame('endless')">∞ ENDLESS</button>
@@ -370,11 +372,47 @@
         });
         
         const keys = {};
-        document.addEventListener('keydown', e => keys[e.code] = true);
+        document.addEventListener('keydown', e => { 
+            keys[e.code] = true; 
+            if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') dash();
+        });
         document.addEventListener('keyup', e => keys[e.code] = false);
         
         document.getElementById('btn-attack').addEventListener('touchstart', e => { e.preventDefault(); attack(); });
         document.getElementById('btn-special').addEventListener('touchstart', e => { e.preventDefault(); specialAttack(); });
+        document.getElementById('btn-dash').addEventListener('touchstart', e => { e.preventDefault(); dash(); });
+        document.addEventListener('click', e => { if (playing && !e.target.closest('#menu') && !e.target.closest('.action-btn')) attack(); });
+        
+        // Dash mechanic
+        let dashCooldown = 0;
+        let isDashing = false;
+        let dashDir = { x: 0, y: 0 };
+        
+        function dash() {
+            if (dashCooldown > 0 || player.energy < 20) return;
+            
+            // Get direction from joystick or keys
+            let dx = joystickX, dy = joystickY;
+            if (keys['KeyW'] || keys['ArrowUp']) dy = -1;
+            if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
+            if (keys['KeyA'] || keys['ArrowLeft']) dx = -1;
+            if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
+            
+            if (dx === 0 && dy === 0) dx = 1; // Default right
+            
+            const len = Math.sqrt(dx * dx + dy * dy);
+            dashDir = { x: dx / len, y: dy / len };
+            
+            isDashing = true;
+            dashCooldown = 60; // 1 second cooldown
+            player.energy -= 20;
+            player.shield = true; // Invincible during dash
+            
+            playSound(400, 0.15, 'sine');
+            notify('💨 DASH!');
+            
+            setTimeout(() => { isDashing = false; player.shield = false; }, 200);
+        }
         document.addEventListener('click', e => { if (playing && !e.target.closest('#menu') && !e.target.closest('.action-btn')) attack(); });
         
         function attack() {
@@ -526,6 +564,14 @@
             
             player.x += mx * player.speed;
             player.y += my * player.speed;
+            
+            // Dash movement
+            if (isDashing) {
+                player.x += dashDir.x * 25;
+                player.y += dashDir.y * 25;
+            }
+            if (dashCooldown > 0) dashCooldown--;
+            
             player.x = Math.max(20, Math.min(window.innerWidth - 60, player.x));
             player.y = Math.max(80, Math.min(window.innerHeight - 150, player.y));
             
