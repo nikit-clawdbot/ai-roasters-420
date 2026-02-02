@@ -100,6 +100,15 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Quests */
+        .quest-panel { position: fixed; top: 120px; right: 10px; background: rgba(0,0,0,0.9); border: 2px solid #8855ff; border-radius: 10px; padding: 12px; max-width: 180px; z-index: 150; display: none; }
+        .quest-panel.visible { display: block; }
+        .quest-title { color: #8855ff; font-weight: bold; font-size: 12px; margin-bottom: 8px; }
+        .quest-desc { color: #fff; font-size: 11px; margin-bottom: 5px; }
+        .quest-reward { color: #ffcc00; font-size: 12px; }
+        .quest-progress { background: #333; height: 5px; border-radius: 3px; margin-top: 6px; }
+        .quest-progress-fill { background: #8855ff; height: 100%; border-radius: 3px; transition: width 0.3s; }
+        
         /* Equipment */
         .equipment-shop { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; overflow-y: auto; }
         .equipment-shop.visible { display: flex; }
@@ -523,7 +532,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v66 — EQUIPMENT SYSTEM</div>
+        <div class="menu-version">v67 — QUEST SYSTEM</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -541,6 +550,13 @@
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
         
         <div class="arena-modifier" id="arena-modifier">🔥 BURNING ARENA</div>
+        
+        <div class="quest-panel" id="quest-panel">
+            <div class="quest-title">📜 QUEST</div>
+            <div class="quest-desc" id="quest-desc">Kill 50 enemies</div>
+            <div class="quest-reward" id="quest-reward">+200 💰</div>
+            <div class="quest-progress"><div class="quest-progress-fill" id="quest-progress" style="width: 0%"></div></div>
+        </div>
         
         <div class="bounty-popup" id="bounty-popup">
             <div class="bounty-title">🎯 BOUNTY</div>
@@ -769,6 +785,72 @@
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
+        
+        // Quest system
+        const quests = [
+            { id: 'kill50', desc: 'Kill 50 enemies', target: 50, reward: 200, type: 'kills' },
+            { id: 'score1000', desc: 'Score 1000 points', target: 1000, reward: 250, type: 'score' },
+            { id: 'wave5', desc: 'Complete 5 waves', target: 5, reward: 300, type: 'waves' },
+            { id: 'coins100', desc: 'Collect 100 coins', target: 100, reward: 150, type: 'coins' },
+            { id: 'combo20', desc: 'Get 20x combo', target: 20, reward: 200, type: 'combo' }
+        ];
+        let currentQuest = null;
+        let questProgress = 0;
+        let questCoinsCollected = 0;
+        
+        function startQuest() {
+            currentQuest = quests[Math.floor(Math.random() * quests.length)];
+            questProgress = 0;
+            questCoinsCollected = 0;
+            
+            document.getElementById('quest-desc').textContent = currentQuest.desc;
+            document.getElementById('quest-reward').textContent = '+' + currentQuest.reward + ' 💰';
+            document.getElementById('quest-progress').style.width = '0%';
+            document.getElementById('quest-panel').classList.add('visible');
+            
+            notify('📜 NEW QUEST: ' + currentQuest.desc);
+            playSound(330, 0.2, 'triangle');
+        }
+        
+        function updateQuest(type, value) {
+            if (!currentQuest) return;
+            
+            if (currentQuest.type === type) {
+                if (type === 'combo') {
+                    questProgress = Math.max(questProgress, value);
+                } else if (type === 'coins') {
+                    questCoinsCollected += value;
+                    questProgress = questCoinsCollected;
+                } else {
+                    questProgress = value;
+                }
+                
+                const pct = Math.min(100, (questProgress / currentQuest.target) * 100);
+                document.getElementById('quest-progress').style.width = pct + '%';
+                
+                if (questProgress >= currentQuest.target) {
+                    completeQuest();
+                }
+            }
+        }
+        
+        function completeQuest() {
+            totalCoins += currentQuest.reward;
+            saveTotalCoins();
+            
+            notify('📜 QUEST COMPLETE! +' + currentQuest.reward + ' coins!');
+            playSound(660, 0.3, 'sine');
+            playSound(880, 0.3, 'sine');
+            
+            document.getElementById('quest-panel').classList.remove('visible');
+            currentQuest = null;
+            
+            // Next quest in 45 seconds
+            setTimeout(startQuest, 45000);
+        }
+        
+        // Start first quest after 20 seconds
+        setTimeout(startQuest, 20000);
         
         // Equipment system
         const equipment = {
@@ -2064,6 +2146,10 @@
                 updateBounty('combo', player.combo);
                 updateBounty('score', player.score);
                 
+                // Quest tracking
+                updateQuest('combo', player.combo);
+                updateQuest('score', player.score);
+                
                 // Combo finisher chance at 10+ combo
                 if (player.combo >= 10 && Math.random() < 0.15) {
                     triggerComboFinisher();
@@ -2078,6 +2164,9 @@
             
             // Bounty tracking
             updateBounty(e.type, 1);
+            
+            // Quest tracking
+            updateQuest('kills', stats.kills);
             
             // Mini-boss loot
             if (e.isMiniBoss) {
@@ -2126,6 +2215,7 @@
                     wave++;
                     enemiesKilledThisWave = 0;
                     updateBounty('wave', wave); // Bounty tracking
+                    updateQuest('waves', wave); // Quest tracking
                     setTimeout(() => {
                         showWaveBanner();
                         spawnWave();
@@ -2468,6 +2558,7 @@
                     totalCoins++;
                     saveTotalCoins();
                     stats.coinsCollected++;
+                    updateQuest('coins', 1); // Quest tracking
                     playSound(880, 0.1, 'sine');
                     setTimeout(() => { c.el.remove(); spawnCoin(); }, 300);
                 }
