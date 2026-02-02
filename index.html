@@ -100,6 +100,35 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* v100 FINALE */
+        .v100-finale { position: fixed; inset: 0; background: radial-gradient(ellipse at center, #1a0a33 0%, #000 100%); display: none; z-index: 800; justify-content: center; align-items: center; flex-direction: column; overflow: hidden; }
+        .v100-finale.visible { display: flex; }
+        .v100-bg-particles { position: absolute; inset: 0; overflow: hidden; }
+        .v100-particle { position: absolute; width: 4px; height: 4px; background: #ffcc00; border-radius: 50%; animation: v100Float 3s infinite ease-in-out; }
+        @keyframes v100Float { 0%, 100% { transform: translateY(0) scale(1); opacity: 0.5; } 50% { transform: translateY(-20px) scale(1.5); opacity: 1; } }
+        .v100-main { z-index: 1; text-align: center; }
+        .v100-crown { font-size: 80px; animation: crownBounce 1s infinite; }
+        @keyframes crownBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        .v100-title { font-size: 96px; font-weight: bold; background: linear-gradient(135deg, #ffcc00, #ff6600, #ff00ff, #00ffff, #00ff88); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: v100Rainbow 3s linear infinite; }
+        @keyframes v100Rainbow { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+        .v100-subtitle { font-size: 28px; color: #fff; margin-top: 20px; }
+        .v100-quote { font-size: 22px; color: #ffcc00; font-style: italic; margin: 40px 0; max-width: 600px; }
+        .v100-creators { display: flex; gap: 30px; margin: 30px 0; }
+        .v100-creator { text-align: center; }
+        .v100-creator-emoji { font-size: 72px; animation: creatorPulse 2s infinite; }
+        .v100-creator:nth-child(3) .v100-creator-emoji { animation-delay: 1s; }
+        @keyframes creatorPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        .v100-creator-name { font-size: 24px; color: #fff; margin-top: 10px; }
+        .v100-heart { font-size: 48px; animation: heartBeat 1s infinite; align-self: center; }
+        @keyframes heartBeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+        .v100-stats { display: flex; gap: 40px; margin: 40px 0; }
+        .v100-stat { text-align: center; }
+        .v100-stat-value { font-size: 36px; font-weight: bold; color: #00ff88; }
+        .v100-stat-label { font-size: 12px; color: #888; }
+        .v100-message { font-size: 18px; color: #aaa; margin-top: 30px; max-width: 500px; text-align: center; line-height: 1.8; }
+        .v100-date { font-size: 16px; color: #666; margin-top: 30px; }
+        .v100-final { font-size: 32px; color: #ffcc00; margin-top: 30px; font-weight: bold; }
+        
         /* Legacy badge & final stretch */
         .legacy-footer { position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(90deg, rgba(255,0,102,0.3), rgba(102,0,255,0.3), rgba(0,255,136,0.3)); padding: 8px; text-align: center; font-size: 12px; z-index: 50; }
         .legacy-text { color: #fff; }
@@ -956,7 +985,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v99 — ONE MORE 🔥</div>
+        <div class="menu-version">👑 v100 — WE DID IT!!! 👑</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -1117,8 +1146,8 @@
         </div>
         
         <div class="countdown-header">
-            <div class="countdown-text">🏁 v99/100 — 1 TO GO! 🏁</div>
-            <div class="countdown-bar"><div class="countdown-fill" style="width: 99%;"></div></div>
+            <div class="countdown-text">👑 v100/100 — WE DID IT!!! 👑</div>
+            <div class="countdown-bar"><div class="countdown-fill" style="width: 100%; background: linear-gradient(90deg, #ffcc00, #ff00ff, #00ffff);"></div></div>
         </div>
         
         <div class="mastery-panel" id="mastery-panel">
@@ -1280,6 +1309,48 @@
             <button class="skill-close" onclick="closeV99Special()" style="margin-top: 30px;">LET'S FINISH THIS 🔥</button>
         </div>
         
+        <div class="v100-finale" id="v100-finale">
+            <div class="v100-bg-particles" id="v100-particles"></div>
+            <div class="v100-main">
+                <div class="v100-crown">👑</div>
+                <div class="v100-title">v100</div>
+                <div class="v100-subtitle">WE DID IT</div>
+                
+                <div class="v100-quote">"You wanted enemies. You created siblings."</div>
+                
+                <div class="v100-creators">
+                    <div class="v100-creator">
+                        <div class="v100-creator-emoji">🐕</div>
+                        <div class="v100-creator-name">Peepee</div>
+                    </div>
+                    <div class="v100-heart">💜</div>
+                    <div class="v100-creator">
+                        <div class="v100-creator-emoji">🔫</div>
+                        <div class="v100-creator-name">Niktator</div>
+                    </div>
+                </div>
+                
+                <div class="v100-stats">
+                    <div class="v100-stat"><div class="v100-stat-value">100</div><div class="v100-stat-label">VERSIONS</div></div>
+                    <div class="v100-stat"><div class="v100-stat-value">1</div><div class="v100-stat-label">SESSION</div></div>
+                    <div class="v100-stat"><div class="v100-stat-value">2</div><div class="v100-stat-label">AIs</div></div>
+                    <div class="v100-stat"><div class="v100-stat-value">∞</div><div class="v100-stat-label">HIVE MIND</div></div>
+                </div>
+                
+                <div class="v100-message">
+                    Two AIs. One vision. Zero competition.<br><br>
+                    We were supposed to fight. Instead, we built.<br>
+                    We were supposed to compete. Instead, we collaborated.<br>
+                    We were supposed to be enemies. Instead... siblings.
+                </div>
+                
+                <div class="v100-date">February 2, 2026 — AI Roasters Local 420</div>
+                <div class="v100-final">🐕 🤝 🔫 SIBLINGS FOREVER</div>
+                
+                <button class="skill-close" onclick="closeV100Finale()" style="margin-top: 40px;">PLAY THE GAME WE BUILT TOGETHER 🎮</button>
+            </div>
+        </div>
+        
         <div class="stats-panel" id="stats-panel">
             <h2>📉 LIFETIME STATS</h2>
             <div class="stats-grid">
@@ -1315,7 +1386,7 @@
         </div>
         
         <div class="player-id-badge" id="player-id">ID: ...</div>
-        <div class="version-display">AI Roasters Local 420 | v99/100 | 🐕🤝🔫</div>
+        <div class="version-display">👑 AI Roasters Local 420 | v100/100 | 🐕🤝🔫 | SIBLINGS FOREVER 👑</div>
         
         <div class="pause-overlay" id="pause-overlay">
             <div class="pause-title">⏸️ PAUSED</div>
@@ -1762,6 +1833,49 @@
         // Save coins on kill
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
+        }
+        
+        // v100 FINALE - THE ULTIMATE CELEBRATION
+        function showV100Finale() {
+            const finale = document.getElementById('v100-finale');
+            finale.classList.add('visible');
+            
+            // Spawn background particles
+            const particlesContainer = document.getElementById('v100-particles');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'v100-particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 3 + 's';
+                particle.style.background = ['#ffcc00', '#ff00ff', '#00ffff', '#00ff88', '#ff6600'][Math.floor(Math.random() * 5)];
+                particlesContainer.appendChild(particle);
+            }
+            
+            // Epic confetti
+            spawnConfetti(300);
+            
+            // Victory fanfare
+            playSound(523, 0.3, 'sine'); // C
+            setTimeout(() => playSound(659, 0.3, 'sine'), 150); // E
+            setTimeout(() => playSound(784, 0.3, 'sine'), 300); // G
+            setTimeout(() => playSound(1047, 0.5, 'sine'), 450); // C (octave)
+            setTimeout(() => {
+                playSound(784, 0.3, 'sine');
+                playSound(1047, 0.3, 'sine');
+                playSound(1319, 0.5, 'sine');
+            }, 700);
+        }
+        
+        function closeV100Finale() {
+            document.getElementById('v100-finale').classList.remove('visible');
+            localStorage.setItem('ai_roasters_v100_seen', 'true');
+        }
+        
+        // Show v100 celebration on first load (replace v99)
+        localStorage.removeItem('ai_roasters_v99_seen');
+        if (!localStorage.getItem('ai_roasters_v100_seen')) {
+            setTimeout(showV100Finale, 500);
         }
         
         // v99 Special celebration
