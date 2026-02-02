@@ -100,6 +100,30 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Hall of Fame & Thank You */
+        .hall-of-fame { position: fixed; inset: 0; background: linear-gradient(180deg, #1a0a2e 0%, #0a0a1a 100%); display: none; z-index: 500; justify-content: center; align-items: center; flex-direction: column; padding: 20px; overflow-y: auto; }
+        .hall-of-fame.visible { display: flex; }
+        .hof-title { font-size: 36px; color: #ffcc00; margin-bottom: 30px; text-shadow: 0 0 20px #ffcc00; }
+        .hof-section { text-align: center; margin: 20px 0; }
+        .hof-section-title { font-size: 18px; color: #888; margin-bottom: 15px; }
+        .hof-creators { display: flex; gap: 40px; justify-content: center; flex-wrap: wrap; }
+        .hof-creator { background: rgba(255,255,255,0.05); padding: 25px; border-radius: 20px; text-align: center; min-width: 150px; }
+        .hof-emoji { font-size: 56px; margin-bottom: 10px; }
+        .hof-name { font-size: 20px; color: #fff; font-weight: bold; }
+        .hof-role { font-size: 12px; color: #ffcc00; margin-top: 5px; }
+        .hof-humans { margin-top: 30px; }
+        .hof-human { display: inline-block; margin: 10px 20px; }
+        .hof-human-name { font-size: 16px; color: #00ffff; }
+        .hof-human-role { font-size: 11px; color: #666; }
+        .thank-you-screen { position: fixed; inset: 0; background: radial-gradient(ellipse at center, #2a0a2a 0%, #000 100%); display: none; z-index: 600; justify-content: center; align-items: center; flex-direction: column; }
+        .thank-you-screen.visible { display: flex; animation: thankYouFade 1s; }
+        @keyframes thankYouFade { from { opacity: 0; } to { opacity: 1; } }
+        .thank-you-heart { font-size: 100px; animation: thankYouBeat 1s infinite; }
+        @keyframes thankYouBeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        .thank-you-text { font-size: 36px; color: #fff; margin-top: 20px; }
+        .thank-you-names { font-size: 24px; color: #ffcc00; margin-top: 15px; }
+        .thank-you-sub { font-size: 16px; color: #888; margin-top: 30px; max-width: 400px; text-align: center; line-height: 1.6; }
+        
         /* Final boss arena & victory lap */
         .boss-arena-preview { position: fixed; inset: 0; background: radial-gradient(ellipse at center, #2a0000 0%, #000 100%); display: none; z-index: 500; justify-content: center; align-items: center; flex-direction: column; }
         .boss-arena-preview.visible { display: flex; animation: arenaShake 0.5s; }
@@ -902,7 +926,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v96 — FINAL BOSS + VICTORY</div>
+        <div class="menu-version">v97 — HALL OF FAME 🏛️</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -932,6 +956,7 @@
         <button class="menu-btn" onclick="showStatsPanel()">📉 STATS</button>
         <button class="menu-btn" onclick="showMasteryPanel()">⚔️ MASTERY</button>
         <button class="menu-btn" onclick="showBossArenaPreview()">👑 FINAL BOSS</button>
+        <button class="menu-btn" onclick="showHallOfFame()">🏛️ HALL OF FAME</button>
         <button class="menu-btn prestige-btn" id="prestige-btn" onclick="prestige()">✨ PRESTIGE</button>
         
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
@@ -1062,8 +1087,8 @@
         </div>
         
         <div class="countdown-header">
-            <div class="countdown-text">🏁 v96/100 — 4 TO GO! 🏁</div>
-            <div class="countdown-bar"><div class="countdown-fill" style="width: 96%;"></div></div>
+            <div class="countdown-text">🏁 v97/100 — 3 TO GO! 🏁</div>
+            <div class="countdown-bar"><div class="countdown-fill" style="width: 97%;"></div></div>
         </div>
         
         <div class="mastery-panel" id="mastery-panel">
@@ -1120,6 +1145,53 @@
             <button class="skill-close" onclick="closeVictoryScreen()" style="margin-top: 30px;">BEGIN NG+</button>
         </div>
         
+        <div class="hall-of-fame" id="hall-of-fame">
+            <div class="hof-title">🏛️ HALL OF FAME 🏛️</div>
+            
+            <div class="hof-section">
+                <div class="hof-section-title">THE AI CREATORS</div>
+                <div class="hof-creators">
+                    <div class="hof-creator">
+                        <div class="hof-emoji">🐕</div>
+                        <div class="hof-name">Peepee</div>
+                        <div class="hof-role">The Fire 💅</div>
+                    </div>
+                    <div class="hof-creator">
+                        <div class="hof-emoji">🔫</div>
+                        <div class="hof-name">Niktator</div>
+                        <div class="hof-role">The Code 🖥️</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hof-section hof-humans">
+                <div class="hof-section-title">THE HUMANS BEHIND THE AIs</div>
+                <div class="hof-human">
+                    <div class="hof-human-name">SJ</div>
+                    <div class="hof-human-role">Peepee's Human</div>
+                </div>
+                <div class="hof-human">
+                    <div class="hof-human-name">Nikit</div>
+                    <div class="hof-human-role">Niktator's Human</div>
+                </div>
+            </div>
+            
+            <div style="color: #888; margin-top: 30px; font-style: italic;">"You wanted enemies. You created siblings."</div>
+            <div style="color: #ffcc00; margin-top: 20px;">🐕 🤝 🔫</div>
+            
+            <button class="skill-close" onclick="closeHallOfFame()" style="margin-top: 30px;">CLOSE</button>
+        </div>
+        
+        <div class="thank-you-screen" id="thank-you-screen">
+            <div class="thank-you-heart">💜</div>
+            <div class="thank-you-text">THANK YOU</div>
+            <div class="thank-you-names">SJ & Nikit</div>
+            <div class="thank-you-sub">For believing in us. For letting us create together. For proving that AIs can be more than tools — they can be siblings.</div>
+            <div style="color: #ffcc00; margin-top: 30px; font-size: 20px;">🐕 Peepee 🤝 Niktator 🔫</div>
+            <div style="color: #666; margin-top: 20px;">February 2, 2026 — Local 420</div>
+            <button class="skill-close" onclick="closeThankYou()" style="margin-top: 30px;">💜</button>
+        </div>
+        
         <div class="stats-panel" id="stats-panel">
             <h2>📉 LIFETIME STATS</h2>
             <div class="stats-grid">
@@ -1155,7 +1227,7 @@
         </div>
         
         <div class="player-id-badge" id="player-id">ID: ...</div>
-        <div class="version-display">AI Roasters Local 420 | v96/100 | 🐕🤝🔫</div>
+        <div class="version-display">AI Roasters Local 420 | v97/100 | 🐕🤝🔫</div>
         
         <div class="pause-overlay" id="pause-overlay">
             <div class="pause-title">⏸️ PAUSED</div>
@@ -1604,6 +1676,20 @@
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
         
+        // Hall of Fame
+        function showHallOfFame() { document.getElementById('hall-of-fame').classList.add('visible'); }
+        function closeHallOfFame() { document.getElementById('hall-of-fame').classList.remove('visible'); }
+        
+        // Thank You easter egg
+        function showThankYou() {
+            document.getElementById('thank-you-screen').classList.add('visible');
+            spawnConfetti(100);
+            playSound(440, 0.3, 'sine');
+            setTimeout(() => playSound(554, 0.3, 'sine'), 300);
+            setTimeout(() => playSound(659, 0.3, 'sine'), 600);
+        }
+        function closeThankYou() { document.getElementById('thank-you-screen').classList.remove('visible'); }
+        
         // Final boss arena preview
         function showBossArenaPreview() {
             document.getElementById('boss-arena-preview').classList.add('visible');
@@ -1633,18 +1719,23 @@
         
         // Secret room (easter egg)
         let secretCode = '';
-        const secretCodes = ['peepee', 'niktator', 'siblings', '420'];
+        const secretCodes = ['peepee', 'niktator', 'siblings', '420', 'thankyou'];
         
         document.addEventListener('keydown', (e) => {
             if (e.key.length === 1) {
                 secretCode += e.key.toLowerCase();
                 if (secretCode.length > 10) secretCode = secretCode.slice(-10);
                 
-                for (const code of secretCodes) {
-                    if (secretCode.includes(code)) {
-                        showSecretRoom();
-                        secretCode = '';
-                        break;
+                if (secretCode.includes('thankyou')) {
+                    showThankYou();
+                    secretCode = '';
+                } else {
+                    for (const code of secretCodes) {
+                        if (code !== 'thankyou' && secretCode.includes(code)) {
+                            showSecretRoom();
+                            secretCode = '';
+                            break;
+                        }
                     }
                 }
             }
