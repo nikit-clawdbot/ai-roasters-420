@@ -100,6 +100,23 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Weapon mastery & countdown */
+        .mastery-panel { position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
+        .mastery-panel.visible { display: flex; }
+        .mastery-panel h2 { color: #ff8800; font-size: 28px; margin-bottom: 20px; }
+        .mastery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 400px; }
+        .mastery-card { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #333; }
+        .mastery-card.equipped { border-color: #00ff88; box-shadow: 0 0 15px rgba(0,255,136,0.3); }
+        .mastery-icon { font-size: 32px; }
+        .mastery-name { font-size: 14px; color: #fff; margin: 8px 0; }
+        .mastery-level { font-size: 12px; color: #ff8800; }
+        .mastery-bar { height: 4px; background: #333; border-radius: 2px; margin-top: 8px; }
+        .mastery-fill { height: 100%; background: #ff8800; border-radius: 2px; }
+        .countdown-header { position: fixed; top: 0; left: 0; right: 0; background: linear-gradient(90deg, #ff0066, #ffcc00, #00ff88); padding: 8px; text-align: center; z-index: 200; }
+        .countdown-text { font-size: 14px; font-weight: bold; color: #000; }
+        .countdown-bar { height: 4px; background: rgba(0,0,0,0.3); margin-top: 5px; border-radius: 2px; }
+        .countdown-fill { height: 100%; background: #000; border-radius: 2px; width: 94%; }
+        
         /* Ascension system */
         .ascension-badge { position: fixed; top: 10px; right: 10px; background: linear-gradient(135deg, #ffcc00, #ff6600); padding: 5px 12px; border-radius: 15px; font-size: 12px; font-weight: bold; color: #000; z-index: 100; display: none; }
         .ascension-badge.visible { display: block; animation: ascensionGlow 2s infinite; }
@@ -845,7 +862,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v93 — ASCENSION</div>
+        <div class="menu-version">v94 — MASTERY + COUNTDOWN</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -873,6 +890,7 @@
         <button class="menu-btn" onclick="showBossGallery()">👹 BOSSES</button>
         <button class="menu-btn" onclick="showArenaSelector()">🗺️ ARENAS</button>
         <button class="menu-btn" onclick="showStatsPanel()">📉 STATS</button>
+        <button class="menu-btn" onclick="showMasteryPanel()">⚔️ MASTERY</button>
         <button class="menu-btn prestige-btn" id="prestige-btn" onclick="prestige()">✨ PRESTIGE</button>
         
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
@@ -1002,6 +1020,17 @@
             <div class="playtime-sub">Keep playing!</div>
         </div>
         
+        <div class="countdown-header">
+            <div class="countdown-text">🏁 v94/100 — 6 TO GO! 🏁</div>
+            <div class="countdown-bar"><div class="countdown-fill"></div></div>
+        </div>
+        
+        <div class="mastery-panel" id="mastery-panel">
+            <h2>⚔️ WEAPON MASTERY</h2>
+            <div class="mastery-grid" id="mastery-grid"></div>
+            <button class="skill-close" onclick="closeMasteryPanel()">CLOSE</button>
+        </div>
+        
         <div class="stats-panel" id="stats-panel">
             <h2>📉 LIFETIME STATS</h2>
             <div class="stats-grid">
@@ -1037,7 +1066,7 @@
         </div>
         
         <div class="player-id-badge" id="player-id">ID: ...</div>
-        <div class="version-display">AI Roasters Local 420 | v93/100 | 🐕🤝🔫</div>
+        <div class="version-display">AI Roasters Local 420 | v94/100 | 🐕🤝🔫</div>
         
         <div class="pause-overlay" id="pause-overlay">
             <div class="pause-title">⏸️ PAUSED</div>
@@ -1485,6 +1514,56 @@
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
+        
+        // Weapon mastery system
+        const weaponMasteries = [
+            { id: 'fists', icon: '👊', name: 'Fists', level: 0, xp: 0, bonus: '+5% attack speed' },
+            { id: 'sword', icon: '⚔️', name: 'Sword', level: 0, xp: 0, bonus: '+10% damage' },
+            { id: 'hammer', icon: '🔨', name: 'Hammer', level: 0, xp: 0, bonus: '+15% crit' },
+            { id: 'daggers', icon: '🗡️', name: 'Daggers', level: 0, xp: 0, bonus: '+20% combo' },
+            { id: 'staff', icon: '🪄', name: 'Staff', level: 0, xp: 0, bonus: '+25% XP' },
+            { id: 'bow', icon: '🏹', name: 'Bow', level: 0, xp: 0, bonus: '+30% range' }
+        ];
+        let equippedWeapon = 0;
+        let savedMasteries = JSON.parse(localStorage.getItem('ai_roasters_masteries') || 'null');
+        if (savedMasteries) {
+            savedMasteries.forEach((m, i) => {
+                weaponMasteries[i].level = m.level;
+                weaponMasteries[i].xp = m.xp;
+            });
+        }
+        
+        function addMasteryXP(amount) {
+            const weapon = weaponMasteries[equippedWeapon];
+            weapon.xp += amount;
+            const needed = (weapon.level + 1) * 100;
+            if (weapon.xp >= needed) {
+                weapon.xp -= needed;
+                weapon.level++;
+                notify(weapon.icon + ' ' + weapon.name + ' LEVEL ' + weapon.level + '!');
+                playSound(600, 0.2, 'sine');
+            }
+            saveMasteries();
+        }
+        
+        function saveMasteries() {
+            localStorage.setItem('ai_roasters_masteries', JSON.stringify(weaponMasteries.map(w => ({ level: w.level, xp: w.xp }))));
+        }
+        
+        function showMasteryPanel() {
+            const grid = document.getElementById('mastery-grid');
+            grid.innerHTML = '';
+            weaponMasteries.forEach((w, i) => {
+                const card = document.createElement('div');
+                card.className = 'mastery-card' + (i === equippedWeapon ? ' equipped' : '');
+                card.onclick = () => { equippedWeapon = i; showMasteryPanel(); };
+                const needed = (w.level + 1) * 100;
+                card.innerHTML = '<div class="mastery-icon">' + w.icon + '</div><div class="mastery-name">' + w.name + '</div><div class="mastery-level">Lv.' + w.level + ' • ' + w.bonus + '</div><div class="mastery-bar"><div class="mastery-fill" style="width:' + (w.xp / needed * 100) + '%"></div></div>';
+                grid.appendChild(card);
+            });
+            document.getElementById('mastery-panel').classList.add('visible');
+        }
+        function closeMasteryPanel() { document.getElementById('mastery-panel').classList.remove('visible'); }
         
         // Ascension system (beyond NG+)
         let ascensionLevel = parseInt(localStorage.getItem('ai_roasters_ascension') || '0');
