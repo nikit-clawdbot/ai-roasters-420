@@ -100,6 +100,23 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Enemy variants & wave modifiers */
+        .variant-badge { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 10px; padding: 2px 6px; border-radius: 10px; white-space: nowrap; }
+        .variant-elite { background: #4488ff; color: #fff; }
+        .variant-champion { background: #aa44ff; color: #fff; }
+        .variant-legendary { background: #ffcc00; color: #000; }
+        .wave-modifier { position: fixed; top: 125px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 8px 20px; border-radius: 20px; font-size: 14px; z-index: 100; border: 2px solid #ffcc00; display: none; }
+        .wave-modifier.visible { display: block; animation: modifierPulse 0.5s; }
+        @keyframes modifierPulse { 0% { transform: translateX(-50%) scale(0.8); } 50% { transform: translateX(-50%) scale(1.1); } 100% { transform: translateX(-50%) scale(1); } }
+        .stats-panel { position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
+        .stats-panel.visible { display: flex; }
+        .stats-panel h2 { color: #00ffff; font-size: 28px; margin-bottom: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 400px; }
+        .stat-card { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; text-align: center; }
+        .stat-icon { font-size: 24px; }
+        .stat-value { font-size: 20px; font-weight: bold; color: #00ff88; margin: 5px 0; }
+        .stat-label { font-size: 11px; color: #888; }
+        
         /* Confetti system */
         .confetti { position: fixed; width: 10px; height: 10px; pointer-events: none; z-index: 700; animation: confettiFall 3s linear forwards; }
         @keyframes confettiFall { 0% { transform: translateY(-10px) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
@@ -817,7 +834,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v91 — STREAKS + CONFETTI</div>
+        <div class="menu-version">v92 — VARIANTS + WAVE MODS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -844,6 +861,7 @@
         <button class="menu-btn" onclick="showCodex()">📜 CODEX</button>
         <button class="menu-btn" onclick="showBossGallery()">👹 BOSSES</button>
         <button class="menu-btn" onclick="showArenaSelector()">🗺️ ARENAS</button>
+        <button class="menu-btn" onclick="showStatsPanel()">📉 STATS</button>
         <button class="menu-btn prestige-btn" id="prestige-btn" onclick="prestige()">✨ PRESTIGE</button>
         
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
@@ -963,6 +981,23 @@
         
         <div class="miniboss-warning" id="miniboss-warning">⚠️ MINIBOSS INCOMING ⚠️</div>
         
+        <div class="wave-modifier" id="wave-modifier">🌊 NORMAL WAVE</div>
+        
+        <div class="stats-panel" id="stats-panel">
+            <h2>📉 LIFETIME STATS</h2>
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-icon">💀</div><div class="stat-value" id="stat-kills">0</div><div class="stat-label">Total Kills</div></div>
+                <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value" id="stat-coins">0</div><div class="stat-label">Coins Earned</div></div>
+                <div class="stat-card"><div class="stat-icon">🔥</div><div class="stat-value" id="stat-combo">0</div><div class="stat-label">Best Combo</div></div>
+                <div class="stat-card"><div class="stat-icon">🌊</div><div class="stat-value" id="stat-wave">0</div><div class="stat-label">Highest Wave</div></div>
+                <div class="stat-card"><div class="stat-icon">👹</div><div class="stat-value" id="stat-bosses">0</div><div class="stat-label">Bosses Killed</div></div>
+                <div class="stat-card"><div class="stat-icon">⏱️</div><div class="stat-value" id="stat-time">0m</div><div class="stat-label">Time Played</div></div>
+                <div class="stat-card"><div class="stat-icon">☠️</div><div class="stat-value" id="stat-deaths">0</div><div class="stat-label">Deaths</div></div>
+                <div class="stat-card"><div class="stat-icon">✨</div><div class="stat-value" id="stat-ngplus">0</div><div class="stat-label">NG+ Level</div></div>
+            </div>
+            <button class="skill-close" onclick="closeStatsPanel()">CLOSE</button>
+        </div>
+        
         <div class="milestone-banner" id="milestone-banner">
             <div class="milestone-text">🎉 90% 🎉</div>
             <div class="milestone-sub">NINETY PERCENT COMPLETE</div>
@@ -983,7 +1018,7 @@
         </div>
         
         <div class="player-id-badge" id="player-id">ID: ...</div>
-        <div class="version-display">AI Roasters Local 420 | v91/100 | 🐕🤝🔫</div>
+        <div class="version-display">AI Roasters Local 420 | v92/100 | 🐕🤝🔫</div>
         
         <div class="pause-overlay" id="pause-overlay">
             <div class="pause-title">⏸️ PAUSED</div>
@@ -1430,6 +1465,67 @@
         // Save coins on kill
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
+        }
+        
+        // Enemy variants system
+        const variants = [
+            { id: 'normal', name: '', hpMult: 1, color: null },
+            { id: 'elite', name: '⚡ ELITE', hpMult: 2, color: '#4488ff' },
+            { id: 'champion', name: '💀 CHAMPION', hpMult: 3, color: '#aa44ff' },
+            { id: 'legendary', name: '👑 LEGENDARY', hpMult: 5, color: '#ffcc00' }
+        ];
+        
+        function getRandomVariant() {
+            const roll = Math.random();
+            if (roll < 0.02) return variants[3]; // 2% legendary
+            if (roll < 0.08) return variants[2]; // 6% champion
+            if (roll < 0.20) return variants[1]; // 12% elite
+            return variants[0]; // 80% normal
+        }
+        
+        // Wave modifiers system
+        const waveModifiers = [
+            { id: 'normal', icon: '🌊', name: 'Normal Wave' },
+            { id: 'speed', icon: '💨', name: 'Speed Wave' },
+            { id: 'tank', icon: '🛡️', name: 'Tank Wave' },
+            { id: 'gold', icon: '💰', name: 'Gold Rush' },
+            { id: 'damage', icon: '⚔️', name: 'Damage Wave' },
+            { id: 'swarm', icon: '🌊', name: 'Swarm Wave' },
+            { id: 'ghost', icon: '👻', name: 'Ghost Wave' },
+            { id: 'fire', icon: '🔥', name: 'Fire Wave' },
+            { id: 'freeze', icon: '❄️', name: 'Freeze Wave' }
+        ];
+        let currentWaveMod = waveModifiers[0];
+        
+        function setWaveModifier() {
+            currentWaveMod = waveModifiers[Math.floor(Math.random() * waveModifiers.length)];
+            const modEl = document.getElementById('wave-modifier');
+            modEl.textContent = currentWaveMod.icon + ' ' + currentWaveMod.name.toUpperCase();
+            modEl.classList.add('visible');
+            setTimeout(() => modEl.classList.remove('visible'), 3000);
+        }
+        
+        // Stats panel
+        let lifetimeStats = JSON.parse(localStorage.getItem('ai_roasters_lifetime') || '{"kills":0,"coins":0,"combo":0,"wave":0,"bosses":0,"time":0,"deaths":0}');
+        
+        function showStatsPanel() {
+            document.getElementById('stat-kills').textContent = lifetimeStats.kills;
+            document.getElementById('stat-coins').textContent = lifetimeStats.coins;
+            document.getElementById('stat-combo').textContent = lifetimeStats.combo + 'x';
+            document.getElementById('stat-wave').textContent = lifetimeStats.wave;
+            document.getElementById('stat-bosses').textContent = lifetimeStats.bosses;
+            document.getElementById('stat-time').textContent = Math.floor(lifetimeStats.time / 60) + 'm';
+            document.getElementById('stat-deaths').textContent = lifetimeStats.deaths;
+            document.getElementById('stat-ngplus').textContent = ngPlusLevel;
+            document.getElementById('stats-panel').classList.add('visible');
+        }
+        function closeStatsPanel() { document.getElementById('stats-panel').classList.remove('visible'); }
+        
+        function updateLifetimeStats() {
+            lifetimeStats.kills = Math.max(lifetimeStats.kills, stats.kills);
+            lifetimeStats.combo = Math.max(lifetimeStats.combo, player.combo);
+            lifetimeStats.wave = Math.max(lifetimeStats.wave, wave);
+            localStorage.setItem('ai_roasters_lifetime', JSON.stringify(lifetimeStats));
         }
         
         // Confetti system
