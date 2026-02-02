@@ -100,6 +100,21 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Pets */
+        .pet { position: absolute; width: 35px; height: 35px; display: flex; justify-content: center; align-items: center; font-size: 24px; z-index: 80; transition: left 0.1s, top 0.1s; filter: drop-shadow(0 0 8px rgba(0,255,136,0.5)); }
+        .pet-shop { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; overflow-y: auto; }
+        .pet-shop.visible { display: flex; }
+        .pet-shop h2 { color: #ff88cc; font-size: 28px; margin-bottom: 20px; }
+        .pet-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 400px; }
+        .pet-item { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #333; cursor: pointer; }
+        .pet-item:hover { border-color: #ff88cc; }
+        .pet-item.owned { border-color: #00ff88; }
+        .pet-item.active { border-color: #ffcc00; box-shadow: 0 0 15px rgba(255,204,0,0.5); }
+        .pet-icon { font-size: 36px; }
+        .pet-name { font-size: 14px; margin: 8px 0 4px; color: #fff; }
+        .pet-stats { font-size: 11px; color: #aaa; }
+        .pet-cost { font-size: 12px; color: #ffcc00; margin-top: 5px; }
+        
         /* Mini-boss */
         .enemy.miniboss { width: 60px; height: 60px; background: linear-gradient(135deg, #ff6600, #cc3300); border-radius: 12px; box-shadow: 0 0 25px rgba(255,102,0,0.7); font-size: 30px; border: 3px solid #ffcc00; }
         
@@ -487,7 +502,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v63 — MINI-BOSSES</div>
+        <div class="menu-version">v64 — PETS + COMPANIONS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -498,6 +513,7 @@
         <button class="menu-btn" onclick="showShop()">🛒 SHOP</button>
         <button class="menu-btn" onclick="showSkins()">🎨 SKINS</button>
         <button class="menu-btn" onclick="showSkillTree()">🌳 SKILLS</button>
+        <button class="menu-btn" onclick="showPetShop()">🐾 PETS</button>
         <button class="menu-btn prestige-btn" id="prestige-btn" onclick="prestige()">✨ PRESTIGE</button>
         
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
@@ -519,6 +535,13 @@
             <div style="color:#ffcc00;margin-bottom:15px;">💰 <span id="skill-coins">0</span></div>
             <div class="skill-grid" id="skill-grid"></div>
             <button class="skill-close" onclick="closeSkillTree()">CLOSE</button>
+        </div>
+        
+        <div class="pet-shop" id="pet-shop">
+            <h2>🐾 PET SHOP</h2>
+            <div style="color:#ffcc00;margin-bottom:15px;">💰 <span id="pet-coins">0</span></div>
+            <div class="pet-grid" id="pet-grid"></div>
+            <button class="skill-close" onclick="closePetShop()">CLOSE</button>
         </div>
     </div>
 
@@ -715,6 +738,111 @@
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
+        
+        // Pet system
+        const pets = [
+            { id: 'dog', name: 'Robo-Dog', emoji: '🐕', cost: 200, damage: 5, speed: 1.2 },
+            { id: 'cat', name: 'Cyber-Cat', emoji: '🐈', cost: 200, damage: 3, speed: 1.5 },
+            { id: 'dragon', name: 'Mini Dragon', emoji: '🐉', cost: 500, damage: 10, speed: 0.8 },
+            { id: 'phantom', name: 'Phantom', emoji: '👻', cost: 350, damage: 7, speed: 1.3 },
+            { id: 'bot', name: 'Battle Bot', emoji: '🤖', cost: 400, damage: 8, speed: 1.0 }
+        ];
+        let ownedPets = JSON.parse(localStorage.getItem('ai_roasters_pets') || '[]');
+        let activePet = localStorage.getItem('ai_roasters_active_pet') || null;
+        let petEl = null;
+        let petX = 0, petY = 0;
+        
+        function showPetShop() {
+            document.getElementById('pet-coins').textContent = totalCoins;
+            const grid = document.getElementById('pet-grid');
+            grid.innerHTML = '';
+            
+            pets.forEach(pet => {
+                const owned = ownedPets.includes(pet.id);
+                const active = activePet === pet.id;
+                
+                const div = document.createElement('div');
+                div.className = 'pet-item' + (owned ? ' owned' : '') + (active ? ' active' : '');
+                div.innerHTML = `
+                    <div class="pet-icon">${pet.emoji}</div>
+                    <div class="pet-name">${pet.name}</div>
+                    <div class="pet-stats">DMG:${pet.damage} SPD:${pet.speed}</div>
+                    <div class="pet-cost">${owned ? (active ? '✓ ACTIVE' : 'EQUIP') : pet.cost + ' 💰'}</div>
+                `;
+                div.onclick = () => {
+                    if (owned) equipPet(pet);
+                    else buyPet(pet);
+                };
+                grid.appendChild(div);
+            });
+            
+            document.getElementById('pet-shop').classList.add('visible');
+        }
+        
+        function buyPet(pet) {
+            if (totalCoins < pet.cost || ownedPets.includes(pet.id)) return;
+            totalCoins -= pet.cost;
+            ownedPets.push(pet.id);
+            saveTotalCoins();
+            localStorage.setItem('ai_roasters_pets', JSON.stringify(ownedPets));
+            equipPet(pet);
+            notify('🐾 ' + pet.name + ' joined you!');
+            playSound(660, 0.2, 'sine');
+            showPetShop();
+        }
+        
+        function equipPet(pet) {
+            activePet = pet.id;
+            localStorage.setItem('ai_roasters_active_pet', pet.id);
+            spawnPet();
+            showPetShop();
+        }
+        
+        function spawnPet() {
+            if (petEl) petEl.remove();
+            if (!activePet) return;
+            
+            const pet = pets.find(p => p.id === activePet);
+            if (!pet) return;
+            
+            petEl = document.createElement('div');
+            petEl.className = 'pet';
+            petEl.textContent = pet.emoji;
+            petX = player.x + 40;
+            petY = player.y + 40;
+            petEl.style.left = petX + 'px';
+            petEl.style.top = petY + 'px';
+            game.appendChild(petEl);
+        }
+        
+        function updatePet() {
+            if (!petEl || !activePet) return;
+            
+            const pet = pets.find(p => p.id === activePet);
+            if (!pet) return;
+            
+            // Follow player
+            const dx = (player.x + 40) - petX;
+            const dy = (player.y + 40) - petY;
+            petX += dx * 0.08 * pet.speed;
+            petY += dy * 0.08 * pet.speed;
+            petEl.style.left = petX + 'px';
+            petEl.style.top = petY + 'px';
+            
+            // Attack nearby enemies
+            enemies.forEach(e => {
+                const dist = Math.sqrt(Math.pow(e.x - petX, 2) + Math.pow(e.y - petY, 2));
+                if (dist < 80 && Math.random() < 0.03) {
+                    e.hp -= pet.damage;
+                    spawnParticles(e.x, e.y, '#ff88cc', 3);
+                }
+            });
+        }
+        
+        function closePetShop() { document.getElementById('pet-shop').classList.remove('visible'); }
+        
+        // Spawn pet on game start
+        setTimeout(() => { if (activePet) spawnPet(); }, 200);
         
         // Skill tree system
         const skills = [
@@ -2207,6 +2335,7 @@
             }
             
             updateHUD();
+            updatePet();
             requestAnimationFrame(gameLoop);
         }
         
