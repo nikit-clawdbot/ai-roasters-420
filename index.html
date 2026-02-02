@@ -100,6 +100,26 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Boss gallery & arena selector */
+        .boss-gallery { position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: none; z-index: 450; justify-content: center; align-items: flex-start; flex-direction: column; padding: 20px; overflow-y: auto; }
+        .boss-gallery.visible { display: flex; }
+        .boss-gallery h2 { color: #ff4444; font-size: 28px; margin-bottom: 20px; align-self: center; }
+        .boss-card { display: flex; align-items: center; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin: 8px auto; max-width: 400px; width: 100%; border-left: 4px solid #ff4444; }
+        .boss-icon { font-size: 48px; margin-right: 15px; }
+        .boss-info { flex: 1; }
+        .boss-name { font-size: 18px; font-weight: bold; color: #fff; }
+        .boss-hp { font-size: 12px; color: #ff4444; margin-top: 5px; }
+        .boss-desc { font-size: 11px; color: #888; margin-top: 5px; }
+        .arena-selector { position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
+        .arena-selector.visible { display: flex; }
+        .arena-selector h2 { color: #00ffff; font-size: 28px; margin-bottom: 20px; }
+        .arena-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; max-width: 450px; }
+        .arena-card { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; text-align: center; cursor: pointer; border: 2px solid #444; transition: all 0.2s; }
+        .arena-card:hover { border-color: #00ffff; transform: scale(1.05); }
+        .arena-card.selected { border-color: #00ff88; box-shadow: 0 0 20px rgba(0,255,136,0.3); }
+        .arena-icon { font-size: 40px; }
+        .arena-name { font-size: 14px; color: #fff; margin-top: 10px; }
+        
         /* Pause menu */
         .pause-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; z-index: 500; justify-content: center; align-items: center; flex-direction: column; }
         .pause-overlay.visible { display: flex; }
@@ -759,7 +779,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v87 — PAUSE MENU</div>
+        <div class="menu-version">v88 — BOSSES + ARENAS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -784,6 +804,8 @@
         <button class="menu-btn" onclick="startTutorial()">❓ TUTORIAL</button>
         <button class="menu-btn" onclick="showStory()">📚 STORY</button>
         <button class="menu-btn" onclick="showCodex()">📜 CODEX</button>
+        <button class="menu-btn" onclick="showBossGallery()">👹 BOSSES</button>
+        <button class="menu-btn" onclick="showArenaSelector()">🗺️ ARENAS</button>
         <button class="menu-btn prestige-btn" id="prestige-btn" onclick="prestige()">✨ PRESTIGE</button>
         
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
@@ -900,7 +922,7 @@
         </div>
         
         <div class="player-id-badge" id="player-id">ID: ...</div>
-        <div class="version-display">AI Roasters Local 420 | v87/100 | 🐕🤝🔫</div>
+        <div class="version-display">AI Roasters Local 420 | v88/100 | 🐕🤝🔫</div>
         
         <div class="pause-overlay" id="pause-overlay">
             <div class="pause-title">⏸️ PAUSED</div>
@@ -961,6 +983,30 @@
             </div>
             
             <button class="skill-close" onclick="closeCodex()">CLOSE</button>
+        </div>
+        
+        <div class="boss-gallery" id="boss-gallery">
+            <h2>👹 BOSS GALLERY</h2>
+            <div class="boss-card"><div class="boss-icon">👾</div><div class="boss-info"><div class="boss-name">Basic Boss</div><div class="boss-hp">❤️ 100 HP</div><div class="boss-desc">The first challenge. Appears every 5 waves.</div></div></div>
+            <div class="boss-card"><div class="boss-icon">👿</div><div class="boss-info"><div class="boss-name">Mini Boss</div><div class="boss-hp">❤️ 250 HP</div><div class="boss-desc">Faster and meaner. Drops extra loot.</div></div></div>
+            <div class="boss-card"><div class="boss-icon">💀</div><div class="boss-info"><div class="boss-name">Skull Lord</div><div class="boss-hp">❤️ 500 HP</div><div class="boss-desc">Master of death. Summons minions.</div></div></div>
+            <div class="boss-card"><div class="boss-icon">👑</div><div class="boss-info"><div class="boss-name">The King</div><div class="boss-hp">❤️ 1000 HP</div><div class="boss-desc">THE FINAL BOSS. Appears at wave 20.</div></div></div>
+            <div class="boss-card"><div class="boss-icon">🔥</div><div class="boss-info"><div class="boss-name">Inferno</div><div class="boss-hp">❤️ 1500 HP</div><div class="boss-desc">NG+ only. Burns everything in its path.</div></div></div>
+            <div class="boss-card"><div class="boss-icon">❄️</div><div class="boss-info"><div class="boss-name">Frost Giant</div><div class="boss-hp">❤️ 2000 HP</div><div class="boss-desc">NG+2 only. Freezes time itself.</div></div></div>
+            <button class="skill-close" onclick="closeBossGallery()">CLOSE</button>
+        </div>
+        
+        <div class="arena-selector" id="arena-selector">
+            <h2>🗺️ SELECT ARENA</h2>
+            <div class="arena-grid">
+                <div class="arena-card selected" onclick="selectArena('city')"><div class="arena-icon">🌆</div><div class="arena-name">City</div></div>
+                <div class="arena-card" onclick="selectArena('forest')"><div class="arena-icon">🌲</div><div class="arena-name">Forest</div></div>
+                <div class="arena-card" onclick="selectArena('desert')"><div class="arena-icon">🏜️</div><div class="arena-name">Desert</div></div>
+                <div class="arena-card" onclick="selectArena('tundra')"><div class="arena-icon">❄️</div><div class="arena-name">Tundra</div></div>
+                <div class="arena-card" onclick="selectArena('volcano')"><div class="arena-icon">🌋</div><div class="arena-name">Volcano</div></div>
+                <div class="arena-card" onclick="selectArena('space')"><div class="arena-icon">🌌</div><div class="arena-name">Space</div></div>
+            </div>
+            <button class="skill-close" onclick="closeArenaSelector()">CLOSE</button>
         </div>
         
         <div class="story-panel" id="story-panel">
@@ -1323,6 +1369,28 @@
         // Save coins on kill
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
+        }
+        
+        // Boss gallery and arena selector
+        function showBossGallery() { document.getElementById('boss-gallery').classList.add('visible'); }
+        function closeBossGallery() { document.getElementById('boss-gallery').classList.remove('visible'); }
+        
+        let selectedArena = 'city';
+        const arenaColors = {
+            city: '#1a1a2e', forest: '#1a2e1a', desert: '#2e2a1a',
+            tundra: '#1a2a2e', volcano: '#2e1a1a', space: '#0a0a1a'
+        };
+        
+        function showArenaSelector() { document.getElementById('arena-selector').classList.add('visible'); }
+        function closeArenaSelector() { document.getElementById('arena-selector').classList.remove('visible'); }
+        
+        function selectArena(arena) {
+            selectedArena = arena;
+            document.body.style.background = arenaColors[arena];
+            document.querySelectorAll('.arena-card').forEach(c => c.classList.remove('selected'));
+            event.target.closest('.arena-card').classList.add('selected');
+            notify('🗺️ ' + arena.toUpperCase() + ' ARENA SELECTED!');
+            closeArenaSelector();
         }
         
         // Pause menu system
