@@ -97,6 +97,34 @@
         .damage-num { position: absolute; font-weight: bold; pointer-events: none; animation: damageFloat 0.8s forwards; z-index: 200; text-shadow: 2px 2px 0 #000; }
         .damage-num.normal { font-size: 16px; color: #fff; }
         .damage-num.crit { font-size: 24px; color: #ffcc00; }
+        /* Shop system */
+        .shop-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 400; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
+        .shop-overlay.visible { display: flex; }
+        .shop-title { font-size: 28px; color: #ffcc00; margin-bottom: 10px; }
+        .shop-coins { font-size: 18px; color: #fff; margin-bottom: 20px; }
+        .shop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 350px; }
+        .shop-item { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #333; cursor: pointer; }
+        .shop-item:hover { border-color: #ffcc00; }
+        .shop-item.owned { border-color: #00ff88; opacity: 0.7; }
+        .shop-item .icon { font-size: 30px; }
+        .shop-item .name { font-size: 12px; margin: 5px 0; }
+        .shop-item .price { font-size: 14px; color: #ffcc00; }
+        .shop-close { margin-top: 20px; padding: 10px 30px; background: #ff4444; border: none; border-radius: 8px; color: #fff; font-weight: bold; cursor: pointer; }
+        
+        /* Skins */
+        .skins-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 400; justify-content: center; align-items: center; flex-direction: column; }
+        .skins-overlay.visible { display: flex; }
+        .skins-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .skin-item { width: 60px; height: 60px; border-radius: 50%; cursor: pointer; border: 3px solid #333; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+        .skin-item.selected { border-color: #00ff88; box-shadow: 0 0 20px rgba(0,255,136,0.5); }
+        .skin-item.locked { opacity: 0.4; }
+        .skin-default { background: linear-gradient(135deg, #ff4444, #aa0000); }
+        .skin-blue { background: linear-gradient(135deg, #4444ff, #0000aa); }
+        .skin-green { background: linear-gradient(135deg, #44ff44, #00aa00); }
+        .skin-gold { background: linear-gradient(135deg, #ffcc00, #aa8800); }
+        .skin-purple { background: linear-gradient(135deg, #aa44ff, #6600aa); }
+        .skin-rainbow { background: linear-gradient(135deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff); }
+        
         /* Time attack */
         .timer-display { position: fixed; top: 10px; right: 60px; background: rgba(0,0,0,0.8); padding: 8px 15px; border-radius: 8px; font-size: 24px; font-weight: bold; z-index: 100; display: none; }
         .timer-display.visible { display: block; }
@@ -348,6 +376,20 @@
     
     <div class="achievement-progress" id="achievement-progress">🏆 0/16</div>
     
+    <div class="shop-overlay" id="shop-overlay">
+        <div class="shop-title">🛒 SHOP</div>
+        <div class="shop-coins" id="shop-coins">💰 0</div>
+        <div class="shop-grid" id="shop-grid"></div>
+        <button class="shop-close" onclick="closeShop()">CLOSE</button>
+    </div>
+    
+    <div class="skins-overlay" id="skins-overlay">
+        <div class="shop-title">🎨 SKINS</div>
+        <div class="shop-coins" id="skins-coins">💰 0</div>
+        <div class="skins-grid" id="skins-grid"></div>
+        <button class="shop-close" onclick="closeSkins()">CLOSE</button>
+    </div>
+    
     <div id="notifications"></div>
     <div id="damage-flash"></div>
     <div id="union-strike"></div>
@@ -363,7 +405,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v50 — 50% MILESTONE 🎉</div>
+        <div class="menu-version">v51 — SHOP + SKINS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -371,6 +413,8 @@
         <button class="menu-btn" onclick="startGame('endless')">∞ ENDLESS</button>
         <button class="menu-btn" onclick="showStats()">📊 STATS</button>
         <button class="menu-btn" onclick="showAchievementsGallery()">🏆 ACHIEVEMENTS</button>
+        <button class="menu-btn" onclick="showShop()">🛒 SHOP</button>
+        <button class="menu-btn" onclick="showSkins()">🎨 SKINS</button>
     </div>
 
     <script>
@@ -454,6 +498,100 @@
             f.className = 'kill-flash';
             document.body.appendChild(f);
             setTimeout(() => f.remove(), 100);
+        }
+        
+        // Shop system
+        const shopItems = [
+            { id: 'hp', name: 'Max HP +25', icon: '❤️', price: 100, effect: () => { player.maxHealth += 25; player.health += 25; } },
+            { id: 'damage', name: 'Damage +20%', icon: '💥', price: 150, effect: () => { player.damage = Math.floor(player.damage * 1.2); } },
+            { id: 'speed', name: 'Speed +15%', icon: '💨', price: 120, effect: () => { player.speed *= 1.15; } },
+            { id: 'regen', name: 'Health Regen', icon: '💚', price: 200, effect: () => { player.regen = true; } }
+        ];
+        let purchasedItems = JSON.parse(localStorage.getItem('ai_roasters_shop') || '[]');
+        let totalCoins = parseInt(localStorage.getItem('ai_roasters_coins') || '0');
+        
+        function showShop() {
+            document.getElementById('shop-coins').textContent = '💰 ' + totalCoins;
+            const grid = document.getElementById('shop-grid');
+            grid.innerHTML = '';
+            shopItems.forEach(item => {
+                const owned = purchasedItems.includes(item.id);
+                const div = document.createElement('div');
+                div.className = 'shop-item' + (owned ? ' owned' : '');
+                div.innerHTML = `<div class="icon">${item.icon}</div><div class="name">${item.name}</div><div class="price">${owned ? '✓ OWNED' : '💰 ' + item.price}</div>`;
+                if (!owned) div.onclick = () => buyItem(item);
+                grid.appendChild(div);
+            });
+            document.getElementById('shop-overlay').classList.add('visible');
+        }
+        
+        function buyItem(item) {
+            if (totalCoins < item.price || purchasedItems.includes(item.id)) return;
+            totalCoins -= item.price;
+            purchasedItems.push(item.id);
+            item.effect();
+            localStorage.setItem('ai_roasters_shop', JSON.stringify(purchasedItems));
+            localStorage.setItem('ai_roasters_coins', totalCoins);
+            notify('🛒 Purchased ' + item.name + '!');
+            playSound(880, 0.2, 'sine');
+            showShop();
+        }
+        
+        function closeShop() { document.getElementById('shop-overlay').classList.remove('visible'); }
+        
+        // Skins system
+        const skins = [
+            { id: 'default', name: 'Default', class: 'skin-default', price: 0 },
+            { id: 'blue', name: 'Blue', class: 'skin-blue', price: 50 },
+            { id: 'green', name: 'Green', class: 'skin-green', price: 50 },
+            { id: 'gold', name: 'Gold', class: 'skin-gold', price: 100 },
+            { id: 'purple', name: 'Purple', class: 'skin-purple', price: 100 },
+            { id: 'rainbow', name: 'Rainbow', class: 'skin-rainbow', price: 200 }
+        ];
+        let unlockedSkins = JSON.parse(localStorage.getItem('ai_roasters_skins') || '["default"]');
+        let currentSkin = localStorage.getItem('ai_roasters_current_skin') || 'default';
+        
+        function showSkins() {
+            document.getElementById('skins-coins').textContent = '💰 ' + totalCoins;
+            const grid = document.getElementById('skins-grid');
+            grid.innerHTML = '';
+            skins.forEach(skin => {
+                const owned = unlockedSkins.includes(skin.id);
+                const selected = currentSkin === skin.id;
+                const div = document.createElement('div');
+                div.className = 'skin-item ' + skin.class + (selected ? ' selected' : '') + (!owned ? ' locked' : '');
+                div.innerHTML = owned ? '😎' : '🔒';
+                div.onclick = () => {
+                    if (owned) selectSkin(skin.id);
+                    else if (totalCoins >= skin.price) buySkin(skin);
+                };
+                grid.appendChild(div);
+            });
+            document.getElementById('skins-overlay').classList.add('visible');
+        }
+        
+        function buySkin(skin) {
+            totalCoins -= skin.price;
+            unlockedSkins.push(skin.id);
+            localStorage.setItem('ai_roasters_skins', JSON.stringify(unlockedSkins));
+            localStorage.setItem('ai_roasters_coins', totalCoins);
+            notify('🎨 Unlocked ' + skin.name + '!');
+            showSkins();
+        }
+        
+        function selectSkin(id) {
+            currentSkin = id;
+            localStorage.setItem('ai_roasters_current_skin', id);
+            const skin = skins.find(s => s.id === id);
+            document.getElementById('player').className = 'player ' + skin.class.replace('skin-', 'player-');
+            showSkins();
+        }
+        
+        function closeSkins() { document.getElementById('skins-overlay').classList.remove('visible'); }
+        
+        // Save coins on kill
+        function saveTotalCoins() {
+            localStorage.setItem('ai_roasters_coins', totalCoins);
         }
         
         // Rage mode
@@ -1324,6 +1462,9 @@
                     c.el.classList.add('collected');
                     player.score += 10;
                     player.xp += 2;
+                    player.coins++;
+                    totalCoins++;
+                    saveTotalCoins();
                     stats.coinsCollected++;
                     playSound(880, 0.1, 'sine');
                     setTimeout(() => { c.el.remove(); spawnCoin(); }, 300);
