@@ -100,6 +100,18 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Equipment */
+        .equipment-shop { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; overflow-y: auto; }
+        .equipment-shop.visible { display: flex; }
+        .equipment-shop h2 { color: #ff8844; font-size: 28px; margin-bottom: 20px; }
+        .equip-slots { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; max-width: 500px; }
+        .equip-slot { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; text-align: center; min-width: 140px; border: 2px solid #333; }
+        .equip-slot h3 { font-size: 14px; color: #ff8844; margin-bottom: 10px; }
+        .equip-item { background: rgba(255,255,255,0.05); padding: 8px; margin: 5px 0; border-radius: 6px; cursor: pointer; border: 1px solid #444; font-size: 12px; }
+        .equip-item:hover { border-color: #ff8844; }
+        .equip-item.owned { border-color: #00ff88; }
+        .equip-item.equipped { border-color: #ffcc00; background: rgba(255,204,0,0.2); }
+        
         /* Arena modifiers */
         .arena-modifier { position: fixed; top: 50px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 150; display: none; border: 2px solid #ffcc00; }
         .arena-modifier.visible { display: block; }
@@ -511,7 +523,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v65 — ARENA MODIFIERS</div>
+        <div class="menu-version">v66 — EQUIPMENT SYSTEM</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -523,6 +535,7 @@
         <button class="menu-btn" onclick="showSkins()">🎨 SKINS</button>
         <button class="menu-btn" onclick="showSkillTree()">🌳 SKILLS</button>
         <button class="menu-btn" onclick="showPetShop()">🐾 PETS</button>
+        <button class="menu-btn" onclick="showEquipment()">🎽 EQUIP</button>
         <button class="menu-btn prestige-btn" id="prestige-btn" onclick="prestige()">✨ PRESTIGE</button>
         
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
@@ -553,6 +566,13 @@
             <div style="color:#ffcc00;margin-bottom:15px;">💰 <span id="pet-coins">0</span></div>
             <div class="pet-grid" id="pet-grid"></div>
             <button class="skill-close" onclick="closePetShop()">CLOSE</button>
+        </div>
+        
+        <div class="equipment-shop" id="equipment-shop">
+            <h2>🎽 EQUIPMENT</h2>
+            <div style="color:#ffcc00;margin-bottom:15px;">💰 <span id="equip-coins">0</span></div>
+            <div class="equip-slots" id="equip-slots"></div>
+            <button class="skill-close" onclick="closeEquipment()">CLOSE</button>
         </div>
     </div>
 
@@ -749,6 +769,102 @@
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
+        
+        // Equipment system
+        const equipment = {
+            helmet: [
+                { id: 'iron_helm', name: '🪖 Iron Helm', cost: 150, hp: 15 },
+                { id: 'gold_helm', name: '👑 Gold Helm', cost: 300, hp: 30 },
+                { id: 'diamond_helm', name: '💎 Diamond Helm', cost: 600, hp: 50 }
+            ],
+            armor: [
+                { id: 'leather', name: '🧥 Leather', cost: 150, def: 10 },
+                { id: 'chain', name: '⛓️ Chainmail', cost: 300, def: 20 },
+                { id: 'plate', name: '🛡️ Plate', cost: 600, def: 35 }
+            ],
+            boots: [
+                { id: 'swift', name: '👟 Swift', cost: 150, spd: 0.5 },
+                { id: 'winged', name: '🪽 Winged', cost: 300, spd: 1.0 },
+                { id: 'rocket', name: '🚀 Rocket', cost: 600, spd: 1.5 }
+            ]
+        };
+        let ownedEquip = JSON.parse(localStorage.getItem('ai_roasters_equip') || '{}');
+        let equippedItems = JSON.parse(localStorage.getItem('ai_roasters_equipped') || '{}');
+        
+        function showEquipment() {
+            document.getElementById('equip-coins').textContent = totalCoins;
+            const slots = document.getElementById('equip-slots');
+            slots.innerHTML = '';
+            
+            Object.entries(equipment).forEach(([slot, items]) => {
+                const div = document.createElement('div');
+                div.className = 'equip-slot';
+                div.innerHTML = '<h3>' + slot.toUpperCase() + '</h3>';
+                
+                items.forEach(item => {
+                    const owned = ownedEquip[item.id];
+                    const equipped = equippedItems[slot] === item.id;
+                    const el = document.createElement('div');
+                    el.className = 'equip-item' + (owned ? ' owned' : '') + (equipped ? ' equipped' : '');
+                    el.innerHTML = item.name + '<br><span style="color:#aaa;font-size:10px;">' + 
+                        (item.hp ? '+' + item.hp + ' HP' : '') +
+                        (item.def ? '+' + item.def + ' DEF' : '') +
+                        (item.spd ? '+' + item.spd + ' SPD' : '') +
+                        '</span><br><span style="color:#ffcc00;">' + (owned ? (equipped ? '✓' : 'EQUIP') : item.cost + '💰') + '</span>';
+                    el.onclick = () => {
+                        if (owned) equipItem(slot, item);
+                        else buyEquip(slot, item);
+                    };
+                    div.appendChild(el);
+                });
+                
+                slots.appendChild(div);
+            });
+            
+            document.getElementById('equipment-shop').classList.add('visible');
+        }
+        
+        function buyEquip(slot, item) {
+            if (totalCoins < item.cost || ownedEquip[item.id]) return;
+            totalCoins -= item.cost;
+            ownedEquip[item.id] = true;
+            saveTotalCoins();
+            localStorage.setItem('ai_roasters_equip', JSON.stringify(ownedEquip));
+            equipItem(slot, item);
+            notify('🎽 Got ' + item.name + '!');
+            playSound(660, 0.2, 'sine');
+        }
+        
+        function equipItem(slot, item) {
+            equippedItems[slot] = item.id;
+            localStorage.setItem('ai_roasters_equipped', JSON.stringify(equippedItems));
+            applyEquipment();
+            showEquipment();
+        }
+        
+        function applyEquipment() {
+            let bonusHp = 0, bonusDef = 0, bonusSpd = 0;
+            Object.entries(equippedItems).forEach(([slot, id]) => {
+                const item = equipment[slot]?.find(i => i.id === id);
+                if (item) {
+                    if (item.hp) bonusHp += item.hp;
+                    if (item.def) bonusDef += item.def;
+                    if (item.spd) bonusSpd += item.spd;
+                }
+            });
+            player.equipHp = bonusHp;
+            player.equipDef = bonusDef;
+            player.equipSpd = bonusSpd;
+        }
+        
+        player.equipHp = 0;
+        player.equipDef = 0;
+        player.equipSpd = 0;
+        
+        function closeEquipment() { document.getElementById('equipment-shop').classList.remove('visible'); }
+        
+        // Apply equipment on load
+        setTimeout(applyEquipment, 150);
         
         // Arena modifiers
         const arenaModifiers = [
