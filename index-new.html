@@ -626,6 +626,114 @@
             z-index: 51;
             opacity: 0.5;
         }
+        
+        /* Mobile Controls */
+        #mobile-controls {
+            display: none;
+            position: fixed;
+            bottom: 80px;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 20px;
+            pointer-events: none;
+        }
+        
+        #mobile-controls.visible {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        
+        .joystick-container {
+            width: 120px;
+            height: 120px;
+            position: relative;
+            pointer-events: auto;
+        }
+        
+        .joystick-base {
+            width: 120px;
+            height: 120px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            position: absolute;
+        }
+        
+        .joystick-stick {
+            width: 50px;
+            height: 50px;
+            background: rgba(255,0,0,0.5);
+            border: 2px solid rgba(255,0,0,0.8);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: none;
+        }
+        
+        .mobile-btn {
+            width: 70px;
+            height: 70px;
+            background: rgba(255,0,0,0.3);
+            border: 2px solid rgba(255,0,0,0.6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            color: #ff0000;
+            pointer-events: auto;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .mobile-btn:active {
+            background: rgba(255,0,0,0.6);
+        }
+        
+        .look-area {
+            position: fixed;
+            top: 60px;
+            right: 0;
+            width: 50%;
+            height: calc(100% - 200px);
+            z-index: 90;
+            display: none;
+        }
+        
+        .look-area.visible {
+            display: block;
+        }
+        
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .cinema-bar { height: 40px; }
+            #hud { top: 50px; left: 15px; }
+            .hud-location { font-size: 1.5rem; }
+            .hud-stats { top: 50px; right: 15px; }
+            .entry-footer { 
+                gap: 30px; 
+                bottom: 80px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .entry-stat-value { font-size: 2rem; }
+            .main-title { font-size: clamp(2.5rem, 12vw, 6rem); }
+            .enter-btn { padding: 15px 40px; font-size: 12px; }
+            #prompt { bottom: 200px; padding: 15px 25px; }
+            .panel-inner { padding: 30px 20px; }
+            .panel-title { font-size: 2.5rem; }
+        }
+        
+        /* Landscape mobile */
+        @media (max-height: 500px) {
+            .cinema-bar { height: 30px; }
+            .entry-footer { display: none; }
+        }
     </style>
 </head>
 <body>
@@ -685,6 +793,16 @@
         <span class="key">E</span>
         <span class="zone-name" id="prompt-zone">ZONE</span>
     </div>
+    
+    <!-- Mobile Controls -->
+    <div id="mobile-controls">
+        <div class="joystick-container" id="joystick">
+            <div class="joystick-base"></div>
+            <div class="joystick-stick" id="joystick-stick"></div>
+        </div>
+        <div class="mobile-btn" id="interact-btn">E</div>
+    </div>
+    <div class="look-area" id="look-area"></div>
 
     <!-- Panel -->
     <div id="panel">
@@ -1179,6 +1297,174 @@
         }
         
         console.log('%c AI ROASTERS LOCAL 420 ', 'background: #ff0000; color: white; font-size: 24px; font-weight: bold; padding: 20px;');
+        
+        // ===================== MOBILE CONTROLS =====================
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+        
+        if (isMobile) {
+            // Disable pointer lock on mobile
+            document.getElementById('enter-btn').onclick = () => {
+                document.getElementById('entry').classList.add('hidden');
+                document.getElementById('hud').classList.add('visible');
+                document.getElementById('hud-stats').style.opacity = '1';
+                document.getElementById('mobile-controls').classList.add('visible');
+                document.getElementById('look-area').classList.add('visible');
+                startTime = Date.now();
+                mobileMode = true;
+            };
+        }
+        
+        let mobileMode = false;
+        let joystickActive = false;
+        let joystickX = 0, joystickY = 0;
+        let lookStartX = 0, lookStartY = 0;
+        let cameraRotY = 0, cameraRotX = 0;
+        
+        // Joystick
+        const joystick = document.getElementById('joystick');
+        const stick = document.getElementById('joystick-stick');
+        
+        if (joystick) {
+            joystick.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                joystickActive = true;
+            });
+            
+            joystick.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (!joystickActive) return;
+                
+                const touch = e.touches[0];
+                const rect = joystick.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                let dx = touch.clientX - centerX;
+                let dy = touch.clientY - centerY;
+                
+                const maxDist = 35;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > maxDist) {
+                    dx = (dx / dist) * maxDist;
+                    dy = (dy / dist) * maxDist;
+                }
+                
+                stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+                
+                joystickX = dx / maxDist;
+                joystickY = dy / maxDist;
+            });
+            
+            joystick.addEventListener('touchend', () => {
+                joystickActive = false;
+                joystickX = 0;
+                joystickY = 0;
+                stick.style.transform = 'translate(-50%, -50%)';
+            });
+        }
+        
+        // Look area (right side of screen)
+        const lookArea = document.getElementById('look-area');
+        if (lookArea) {
+            lookArea.addEventListener('touchstart', (e) => {
+                lookStartX = e.touches[0].clientX;
+                lookStartY = e.touches[0].clientY;
+            });
+            
+            lookArea.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const dx = (touch.clientX - lookStartX) * 0.005;
+                const dy = (touch.clientY - lookStartY) * 0.005;
+                
+                cameraRotY -= dx;
+                cameraRotX -= dy;
+                cameraRotX = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, cameraRotX));
+                
+                camera.rotation.order = 'YXZ';
+                camera.rotation.y = cameraRotY;
+                camera.rotation.x = cameraRotX;
+                
+                lookStartX = touch.clientX;
+                lookStartY = touch.clientY;
+            });
+        }
+        
+        // Interact button
+        const interactBtn = document.getElementById('interact-btn');
+        if (interactBtn) {
+            interactBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (currentZone && !panelOpen) openPanel(currentZone);
+            });
+        }
+        
+        // Modified animate for mobile
+        const originalAnimate = animate;
+        function mobileAnimate() {
+            requestAnimationFrame(mobileAnimate);
+            
+            const time = performance.now();
+            const delta = (time - prevTime) / 1000;
+            
+            if (mobileMode && !panelOpen) {
+                // Movement from joystick
+                const speed = 30;
+                const moveX = joystickX * speed * delta;
+                const moveZ = joystickY * speed * delta;
+                
+                // Move in camera direction
+                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+                const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+                
+                forward.y = 0;
+                right.y = 0;
+                forward.normalize();
+                right.normalize();
+                
+                camera.position.add(forward.multiplyScalar(-moveZ));
+                camera.position.add(right.multiplyScalar(moveX));
+                camera.position.y = 2;
+                
+                // Update HUD
+                document.getElementById('coords').textContent = `${camera.position.x.toFixed(1)} / ${camera.position.z.toFixed(1)}`;
+                
+                if (startTime) {
+                    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                    const min = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                    const sec = (elapsed % 60).toString().padStart(2, '0');
+                    document.getElementById('time').textContent = `${min}:${sec}`;
+                }
+                
+                // Zone proximity
+                currentZone = null;
+                zones.forEach(zone => {
+                    const dist = camera.position.distanceTo(zone.position.clone().setY(2));
+                    if (dist < 10) currentZone = zone;
+                    
+                    zone.beacon.rotation.y = time * 0.001;
+                    zone.glow.material.opacity = 0.1 + Math.sin(time * 0.002) * 0.05;
+                });
+                
+                if (currentZone) {
+                    document.getElementById('prompt').classList.add('visible');
+                    document.getElementById('prompt-zone').textContent = currentZone.name;
+                    document.getElementById('location').textContent = currentZone.name;
+                    document.getElementById('location').style.color = '#' + currentZone.color.toString(16).padStart(6, '0');
+                } else {
+                    document.getElementById('prompt').classList.remove('visible');
+                    document.getElementById('location').textContent = 'THE NEXUS';
+                    document.getElementById('location').style.color = '#ff0000';
+                }
+            }
+            
+            prevTime = time;
+            composer.render();
+        }
+        
+        if (isMobile) {
+            mobileAnimate();
+        }
     </script>
 </body>
 </html>
