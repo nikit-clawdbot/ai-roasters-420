@@ -100,6 +100,21 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Pause menu */
+        .pause-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; z-index: 500; justify-content: center; align-items: center; flex-direction: column; }
+        .pause-overlay.visible { display: flex; }
+        .pause-title { font-size: 48px; color: #ffcc00; margin-bottom: 20px; }
+        .pause-stats { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; margin: 20px; text-align: center; }
+        .pause-stat { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #333; min-width: 200px; }
+        .pause-stat:last-child { border-bottom: none; }
+        .pause-label { color: #888; }
+        .pause-value { color: #00ff88; font-weight: bold; }
+        .pause-buttons { display: flex; gap: 15px; margin-top: 20px; }
+        .pause-btn { padding: 15px 30px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .pause-btn.resume { background: #00ff88; color: #000; }
+        .pause-btn.quit { background: #ff4444; color: #fff; }
+        .version-display { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); color: #444; font-size: 10px; z-index: 50; }
+        
         /* Codex and player ID */
         .codex-panel { position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: none; z-index: 450; justify-content: center; align-items: flex-start; flex-direction: column; padding: 20px; overflow-y: auto; }
         .codex-panel.visible { display: flex; }
@@ -744,7 +759,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v86 — CODEX + PLAYER ID</div>
+        <div class="menu-version">v87 — PAUSE MENU</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -885,6 +900,22 @@
         </div>
         
         <div class="player-id-badge" id="player-id">ID: ...</div>
+        <div class="version-display">AI Roasters Local 420 | v87/100 | 🐕🤝🔫</div>
+        
+        <div class="pause-overlay" id="pause-overlay">
+            <div class="pause-title">⏸️ PAUSED</div>
+            <div class="pause-stats">
+                <div class="pause-stat"><span class="pause-label">Score</span><span class="pause-value" id="pause-score">0</span></div>
+                <div class="pause-stat"><span class="pause-label">Wave</span><span class="pause-value" id="pause-wave">1</span></div>
+                <div class="pause-stat"><span class="pause-label">Combo</span><span class="pause-value" id="pause-combo">0x</span></div>
+                <div class="pause-stat"><span class="pause-label">Kills</span><span class="pause-value" id="pause-kills">0</span></div>
+                <div class="pause-stat"><span class="pause-label">Coins</span><span class="pause-value" id="pause-coins">0</span></div>
+            </div>
+            <div class="pause-buttons">
+                <button class="pause-btn quit" onclick="quitToMenu()">🏠 MENU</button>
+                <button class="pause-btn resume" onclick="resumeGame()">▶️ RESUME</button>
+            </div>
+        </div>
         
         <div class="codex-panel" id="codex-panel">
             <h2>📜 CODEX</h2>
@@ -1293,6 +1324,46 @@
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
+        
+        // Pause menu system
+        let paused = false;
+        
+        function togglePause() {
+            if (!playing) return;
+            
+            if (paused) {
+                resumeGame();
+            } else {
+                pauseGame();
+            }
+        }
+        
+        function pauseGame() {
+            paused = true;
+            document.getElementById('pause-score').textContent = player.score;
+            document.getElementById('pause-wave').textContent = wave;
+            document.getElementById('pause-combo').textContent = player.combo + 'x';
+            document.getElementById('pause-kills').textContent = stats.kills;
+            document.getElementById('pause-coins').textContent = coins;
+            document.getElementById('pause-overlay').classList.add('visible');
+        }
+        
+        function resumeGame() {
+            paused = false;
+            document.getElementById('pause-overlay').classList.remove('visible');
+        }
+        
+        function quitToMenu() {
+            paused = false;
+            playing = false;
+            document.getElementById('pause-overlay').classList.remove('visible');
+            document.getElementById('menu').classList.add('visible');
+        }
+        
+        // ESC key to pause
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') togglePause();
+        });
         
         // Codex system
         function showCodex() { document.getElementById('codex-panel').classList.add('visible'); }
@@ -3845,6 +3916,7 @@
         
         function gameLoop() {
             if (!playing) return;
+            if (paused) { requestAnimationFrame(gameLoop); return; }
             
             // Movement
             let mx = joystickX, my = joystickY;
