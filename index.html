@@ -100,6 +100,20 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Skill tree */
+        .skill-tree { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; overflow-y: auto; }
+        .skill-tree.visible { display: flex; }
+        .skill-tree h2 { color: #00ff88; font-size: 28px; margin-bottom: 20px; }
+        .skill-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 400px; }
+        .skill-item { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #333; cursor: pointer; }
+        .skill-item:hover { border-color: #00ff88; }
+        .skill-item.maxed { border-color: #ffcc00; opacity: 0.7; }
+        .skill-icon { font-size: 32px; }
+        .skill-name { font-size: 14px; margin: 8px 0 4px; color: #fff; }
+        .skill-level { font-size: 12px; color: #00ff88; }
+        .skill-cost { font-size: 12px; color: #ffcc00; margin-top: 5px; }
+        .skill-close { margin-top: 20px; padding: 10px 30px; background: #ff4444; border: none; border-radius: 8px; color: #fff; font-weight: bold; cursor: pointer; }
+        
         /* Random events */
         .event-banner { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); border: 4px solid #ffcc00; border-radius: 15px; padding: 20px 40px; z-index: 350; display: none; text-align: center; }
         .event-banner.visible { display: block; animation: eventPop 0.5s ease-out; }
@@ -470,7 +484,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v61 — WEEKLY REWARDS + JACKPOT</div>
+        <div class="menu-version">v62 — SKILL TREE</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -480,6 +494,7 @@
         <button class="menu-btn" onclick="showAchievementsGallery()">🏆 ACHIEVEMENTS</button>
         <button class="menu-btn" onclick="showShop()">🛒 SHOP</button>
         <button class="menu-btn" onclick="showSkins()">🎨 SKINS</button>
+        <button class="menu-btn" onclick="showSkillTree()">🌳 SKILLS</button>
         <button class="menu-btn prestige-btn" id="prestige-btn" onclick="prestige()">✨ PRESTIGE</button>
         
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
@@ -494,6 +509,13 @@
         <div class="event-banner" id="event-banner">
             <div class="event-icon" id="event-icon">💰</div>
             <div class="event-text" id="event-text">COIN SHOWER!</div>
+        </div>
+        
+        <div class="skill-tree" id="skill-tree">
+            <h2>🌳 SKILL TREE</h2>
+            <div style="color:#ffcc00;margin-bottom:15px;">💰 <span id="skill-coins">0</span></div>
+            <div class="skill-grid" id="skill-grid"></div>
+            <button class="skill-close" onclick="closeSkillTree()">CLOSE</button>
         </div>
     </div>
 
@@ -690,6 +712,74 @@
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
+        
+        // Skill tree system
+        const skills = [
+            { id: 'power', name: 'Power', icon: '⚔️', maxLevel: 5, cost: 100, effect: '+10% damage' },
+            { id: 'vitality', name: 'Vitality', icon: '❤️', maxLevel: 5, cost: 100, effect: '+20 max HP' },
+            { id: 'agility', name: 'Agility', icon: '💨', maxLevel: 5, cost: 80, effect: '+5% speed' },
+            { id: 'precision', name: 'Precision', icon: '🎯', maxLevel: 5, cost: 120, effect: '+5% crit' },
+            { id: 'fortune', name: 'Fortune', icon: '🍀', maxLevel: 5, cost: 150, effect: '+10% coins' },
+            { id: 'regen', name: 'Regen', icon: '💚', maxLevel: 3, cost: 200, effect: '+1 HP/5s' }
+        ];
+        let skillLevels = JSON.parse(localStorage.getItem('ai_roasters_skills') || '{}');
+        
+        function showSkillTree() {
+            document.getElementById('skill-coins').textContent = totalCoins;
+            const grid = document.getElementById('skill-grid');
+            grid.innerHTML = '';
+            
+            skills.forEach(skill => {
+                const level = skillLevels[skill.id] || 0;
+                const maxed = level >= skill.maxLevel;
+                const cost = skill.cost * (level + 1);
+                
+                const div = document.createElement('div');
+                div.className = 'skill-item' + (maxed ? ' maxed' : '');
+                div.innerHTML = `
+                    <div class="skill-icon">${skill.icon}</div>
+                    <div class="skill-name">${skill.name}</div>
+                    <div class="skill-level">LV ${level}/${skill.maxLevel}</div>
+                    <div class="skill-cost">${maxed ? 'MAXED' : cost + ' 💰'}</div>
+                `;
+                if (!maxed) div.onclick = () => upgradeSkill(skill);
+                grid.appendChild(div);
+            });
+            
+            document.getElementById('skill-tree').classList.add('visible');
+        }
+        
+        function upgradeSkill(skill) {
+            const level = skillLevels[skill.id] || 0;
+            const cost = skill.cost * (level + 1);
+            
+            if (totalCoins < cost || level >= skill.maxLevel) return;
+            
+            totalCoins -= cost;
+            skillLevels[skill.id] = level + 1;
+            saveTotalCoins();
+            localStorage.setItem('ai_roasters_skills', JSON.stringify(skillLevels));
+            
+            applySkillBonuses();
+            notify('🌳 ' + skill.name + ' upgraded to LV' + (level + 1) + '!');
+            playSound(660, 0.2, 'sine');
+            showSkillTree();
+        }
+        
+        function applySkillBonuses() {
+            const power = skillLevels.power || 0;
+            const vitality = skillLevels.vitality || 0;
+            const agility = skillLevels.agility || 0;
+            
+            player.damage = 20 + (power * 2);
+            player.maxHealth = 100 + (vitality * 20);
+            player.speed = 5 + (agility * 0.25);
+        }
+        
+        function closeSkillTree() { document.getElementById('skill-tree').classList.remove('visible'); }
+        
+        // Apply skills on load
+        setTimeout(applySkillBonuses, 100);
         
         // Weekly rewards system
         function checkWeeklyReward() {
@@ -1531,6 +1621,7 @@
             if (e.code === 'KeyR') unionStrike();
             if (e.code === 'KeyF') activateRage();
             if (e.code === 'KeyX') weaponSpecial();
+            if (e.code === 'KeyT') showSkillTree();
         });
         document.addEventListener('keyup', e => keys[e.code] = false);
         
