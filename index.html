@@ -100,6 +100,26 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Trail cosmetics */
+        .trail-particle { position: absolute; width: 12px; height: 12px; border-radius: 50%; pointer-events: none; z-index: 50; animation: trailFade 0.5s ease-out forwards; }
+        @keyframes trailFade { to { transform: scale(0); opacity: 0; } }
+        .trail-fire { background: radial-gradient(circle, #ff6600, #ff0000); box-shadow: 0 0 8px #ff3300; }
+        .trail-ice { background: radial-gradient(circle, #00ffff, #0088ff); box-shadow: 0 0 8px #00ccff; }
+        .trail-poison { background: radial-gradient(circle, #00ff00, #008800); box-shadow: 0 0 8px #00ff00; }
+        .trail-rainbow { background: linear-gradient(45deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff); box-shadow: 0 0 8px #fff; }
+        .trail-gold { background: radial-gradient(circle, #ffcc00, #ff8800); box-shadow: 0 0 10px #ffcc00; }
+        .trail-shop { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
+        .trail-shop.visible { display: flex; }
+        .trail-shop h2 { color: #ff88ff; font-size: 28px; margin-bottom: 20px; }
+        .trail-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 400px; }
+        .trail-item { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #888; cursor: pointer; }
+        .trail-item:hover { background: rgba(255,255,255,0.2); }
+        .trail-item.owned { border-color: #00ff88; }
+        .trail-item.active { border-color: #ffcc00; box-shadow: 0 0 15px #ffcc00; }
+        .trail-icon { font-size: 32px; }
+        .trail-name { font-size: 14px; color: #fff; margin-top: 8px; }
+        .trail-cost { font-size: 12px; color: #ffcc00; margin-top: 5px; }
+        
         /* New Game+ and Relics */
         .ng-badge { position: fixed; top: 10px; left: 10px; background: linear-gradient(135deg, #ffcc00, #ff8800); padding: 8px 15px; border-radius: 20px; font-weight: bold; color: #000; z-index: 100; display: none; }
         .ng-badge.visible { display: block; }
@@ -636,7 +656,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v77 — NG+ & RELICS</div>
+        <div class="menu-version">v78 — TRAIL COSMETICS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -654,6 +674,7 @@
         <button class="menu-btn" onclick="showLeaderboard()">📊 SCORES</button>
         <button class="menu-btn" onclick="showLifetimeStats()">📈 STATS</button>
         <button class="menu-btn" onclick="showRelicShop()">🎁 RELICS</button>
+        <button class="menu-btn" onclick="showTrailShop()">🎨 TRAILS</button>
         <button class="menu-btn prestige-btn" id="prestige-btn" onclick="prestige()">✨ PRESTIGE</button>
         
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
@@ -756,6 +777,13 @@
         </div>
         
         <div class="ng-badge" id="ng-badge">NG+0</div>
+        
+        <div class="trail-shop" id="trail-shop">
+            <h2>🎨 TRAIL SHOP</h2>
+            <div style="color:#ffcc00;margin-bottom:15px;">💰 <span id="trail-coins">0</span></div>
+            <div class="trail-grid" id="trail-grid"></div>
+            <button class="skill-close" onclick="closeTrailShop()">CLOSE</button>
+        </div>
     </div>
 
     <script>
@@ -951,6 +979,78 @@
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
+        
+        // Trail cosmetics system
+        let ownedTrails = JSON.parse(localStorage.getItem('ai_roasters_trails') || '["none"]');
+        let activeTrail = localStorage.getItem('ai_roasters_active_trail') || 'none';
+        
+        const trails = [
+            { id: 'none', icon: '❌', name: 'None', cost: 0 },
+            { id: 'fire', icon: '🔥', name: 'Fire Trail', cost: 300 },
+            { id: 'ice', icon: '❄️', name: 'Ice Trail', cost: 300 },
+            { id: 'poison', icon: '☠️', name: 'Poison Trail', cost: 300 },
+            { id: 'rainbow', icon: '🌈', name: 'Rainbow Trail', cost: 500 },
+            { id: 'gold', icon: '✨', name: 'Gold Trail', cost: 750 }
+        ];
+        
+        let lastTrailPos = { x: 0, y: 0 };
+        
+        function spawnTrail() {
+            if (activeTrail === 'none' || !playing) return;
+            
+            const dx = player.x - lastTrailPos.x;
+            const dy = player.y - lastTrailPos.y;
+            if (Math.abs(dx) < 15 && Math.abs(dy) < 15) return;
+            
+            lastTrailPos = { x: player.x, y: player.y };
+            
+            const particle = document.createElement('div');
+            particle.className = 'trail-particle trail-' + activeTrail;
+            particle.style.left = player.x + 'px';
+            particle.style.top = player.y + 'px';
+            game.appendChild(particle);
+            
+            setTimeout(() => particle.remove(), 500);
+        }
+        
+        function showTrailShop() {
+            document.getElementById('trail-coins').textContent = coins;
+            const grid = document.getElementById('trail-grid');
+            grid.innerHTML = '';
+            
+            trails.forEach(t => {
+                const owned = ownedTrails.includes(t.id);
+                const active = activeTrail === t.id;
+                const div = document.createElement('div');
+                div.className = 'trail-item' + (owned ? ' owned' : '') + (active ? ' active' : '');
+                div.innerHTML = `
+                    <div class="trail-icon">${t.icon}</div>
+                    <div class="trail-name">${t.name}</div>
+                    <div class="trail-cost">${active ? '✅ ACTIVE' : owned ? 'TAP TO USE' : t.cost + '💰'}</div>
+                `;
+                div.onclick = () => {
+                    if (owned) {
+                        activeTrail = t.id;
+                        localStorage.setItem('ai_roasters_active_trail', activeTrail);
+                        notify(t.icon + ' ' + t.name + ' EQUIPPED!');
+                        showTrailShop();
+                    } else if (coins >= t.cost) {
+                        coins -= t.cost;
+                        ownedTrails.push(t.id);
+                        localStorage.setItem('ai_roasters_trails', JSON.stringify(ownedTrails));
+                        localStorage.setItem('ai_roasters_coins', coins);
+                        notify('🎨 ' + t.name + ' UNLOCKED!');
+                        playSound(660, 0.2, 'sine');
+                        showTrailShop();
+                    }
+                };
+                grid.appendChild(div);
+            });
+            
+            document.getElementById('trail-shop').classList.add('visible');
+        }
+        
+        function closeTrailShop() { document.getElementById('trail-shop').classList.remove('visible'); }
         
         // New Game+ and Relic system
         let ngPlusLevel = parseInt(localStorage.getItem('ai_roasters_ngplus') || '0');
@@ -3370,6 +3470,7 @@
             updateArenaModifier();
             updateTitle();
             updateFinalBoss();
+            spawnTrail();
             frameCount++;
             if (frameCount % 60 === 0) checkAchievements();
             requestAnimationFrame(gameLoop);
