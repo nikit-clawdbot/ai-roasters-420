@@ -100,6 +100,16 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Screen effects */
+        .crit-flash { position: fixed; inset: 0; background: rgba(255,255,0,0.3); pointer-events: none; z-index: 500; animation: critFlash 0.15s ease-out forwards; }
+        @keyframes critFlash { to { opacity: 0; } }
+        .blood-splatter { position: absolute; width: 30px; height: 30px; background: radial-gradient(circle, #ff0000 0%, transparent 70%); pointer-events: none; z-index: 90; animation: bloodFade 0.5s ease-out forwards; }
+        @keyframes bloodFade { to { opacity: 0; transform: scale(2); } }
+        #game.shake { animation: shakeHard 0.2s ease-out; }
+        @keyframes shakeHard { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(-8px, 8px); } 50% { transform: translate(8px, -8px); } 75% { transform: translate(-8px, -8px); } }
+        .mega-explosion { position: fixed; top: 50%; left: 50%; width: 200px; height: 200px; background: radial-gradient(circle, #ff6600 0%, #ff0000 50%, transparent 70%); transform: translate(-50%, -50%); pointer-events: none; z-index: 500; animation: megaExplode 0.6s ease-out forwards; }
+        @keyframes megaExplode { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(3); opacity: 0; } }
+        
         /* Challenge mode */
         .challenge-select { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
         .challenge-select.visible { display: flex; }
@@ -585,7 +595,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v72 — CHALLENGE MODE</div>
+        <div class="menu-version">v73 — JUICY EFFECTS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -889,6 +899,36 @@
         // Save coins on kill
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
+        }
+        
+        // Juicy screen effects
+        function critFlash() {
+            const flash = document.createElement('div');
+            flash.className = 'crit-flash';
+            document.body.appendChild(flash);
+            setTimeout(() => flash.remove(), 150);
+        }
+        
+        function bloodSplatter(x, y) {
+            const blood = document.createElement('div');
+            blood.className = 'blood-splatter';
+            blood.style.left = x + 'px';
+            blood.style.top = y + 'px';
+            game.appendChild(blood);
+            setTimeout(() => blood.remove(), 500);
+        }
+        
+        function hardShake() {
+            game.classList.add('shake');
+            setTimeout(() => game.classList.remove('shake'), 200);
+        }
+        
+        function megaExplosion() {
+            const exp = document.createElement('div');
+            exp.className = 'mega-explosion';
+            document.body.appendChild(exp);
+            setTimeout(() => exp.remove(), 600);
+            hardShake();
         }
         
         // Challenge mode
@@ -2356,6 +2396,7 @@
                     stats.bossKills++;
                     notify('👹 BOSS DESTROYED!');
                     dropBossLoot(); // Boss loot!
+                    megaExplosion(); // MEGA EXPLOSION!
                     boss = null;
                     document.getElementById('boss-hud').classList.remove('visible');
                 }
@@ -2436,6 +2477,9 @@
                     const damage = isCrit ? baseDamage * 2.5 : baseDamage;
                     e.hp -= damage;
                     
+                    // Juicy effects
+                    if (isCrit) critFlash();
+                    
                     // Update health bar
                     const hpBar = e.el.querySelector('.enemy-hp-fill');
                     if (hpBar) hpBar.style.width = Math.max(0, (e.hp / e.maxHp * 100)) + '%';
@@ -2471,6 +2515,7 @@
                         notify('👹 BOSS DEFEATED! +' + (500 * wave));
                         playSound(523, 0.3, 'sine');
                         dropBossLoot(); // Boss loot!
+                        megaExplosion(); // MEGA EXPLOSION!
                         boss = null;
                         document.getElementById('boss-hud').classList.remove('visible');
                         stats.bossKills++;
@@ -2509,6 +2554,9 @@
             
             // Quest tracking
             updateQuest('kills', stats.kills);
+            
+            // Juicy effects
+            bloodSplatter(e.x, e.y);
             
             // Mini-boss loot
             if (e.isMiniBoss) {
