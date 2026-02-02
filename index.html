@@ -100,6 +100,21 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* New Game+ and Relics */
+        .ng-badge { position: fixed; top: 10px; left: 10px; background: linear-gradient(135deg, #ffcc00, #ff8800); padding: 8px 15px; border-radius: 20px; font-weight: bold; color: #000; z-index: 100; display: none; }
+        .ng-badge.visible { display: block; }
+        .relic-shop { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
+        .relic-shop.visible { display: flex; }
+        .relic-shop h2 { color: #ff88ff; font-size: 28px; margin-bottom: 20px; }
+        .relic-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 400px; }
+        .relic-item { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #ff88ff; cursor: pointer; }
+        .relic-item:hover { background: rgba(255,136,255,0.2); }
+        .relic-item.owned { border-color: #00ff88; background: rgba(0,255,136,0.1); }
+        .relic-icon { font-size: 32px; }
+        .relic-name { font-size: 14px; color: #fff; margin-top: 8px; }
+        .relic-desc { font-size: 11px; color: #888; margin-top: 5px; }
+        .relic-cost { font-size: 12px; color: #ffcc00; margin-top: 5px; }
+        
         /* Final boss */
         .final-boss { position: absolute; font-size: 100px; z-index: 150; filter: drop-shadow(0 0 20px #ff0000); transition: all 0.1s; }
         .final-boss-hp { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); width: 150px; height: 15px; background: #333; border: 2px solid #ff0000; border-radius: 10px; }
@@ -621,7 +636,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v76 — FINAL BOSS 👑</div>
+        <div class="menu-version">v77 — NG+ & RELICS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -638,6 +653,7 @@
         <button class="menu-btn" onclick="showAchieveGallery()">🏆 ACHIEVE</button>
         <button class="menu-btn" onclick="showLeaderboard()">📊 SCORES</button>
         <button class="menu-btn" onclick="showLifetimeStats()">📈 STATS</button>
+        <button class="menu-btn" onclick="showRelicShop()">🎁 RELICS</button>
         <button class="menu-btn prestige-btn" id="prestige-btn" onclick="prestige()">✨ PRESTIGE</button>
         
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
@@ -731,6 +747,15 @@
             </div>
             <button class="skill-close" onclick="closeChallenges()">CLOSE</button>
         </div>
+        
+        <div class="relic-shop" id="relic-shop">
+            <h2>🎁 RELIC SHOP</h2>
+            <div style="color:#ffcc00;margin-bottom:15px;">💰 <span id="relic-coins">0</span></div>
+            <div class="relic-grid" id="relic-grid"></div>
+            <button class="skill-close" onclick="closeRelicShop()">CLOSE</button>
+        </div>
+        
+        <div class="ng-badge" id="ng-badge">NG+0</div>
     </div>
 
     <script>
@@ -927,6 +952,92 @@
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
         
+        // New Game+ and Relic system
+        let ngPlusLevel = parseInt(localStorage.getItem('ai_roasters_ngplus') || '0');
+        let ownedRelics = JSON.parse(localStorage.getItem('ai_roasters_relics') || '[]');
+        
+        const relics = [
+            { id: 'power', icon: '⚔️', name: 'Power Relic', desc: '+10% damage', cost: 500 },
+            { id: 'life', icon: '❤️', name: 'Life Relic', desc: '+25 max HP', cost: 500 },
+            { id: 'speed', icon: '💨', name: 'Speed Relic', desc: '+10% speed', cost: 500 },
+            { id: 'luck', icon: '🍀', name: 'Luck Relic', desc: '+15% coins', cost: 750 },
+            { id: 'xp', icon: '✨', name: 'XP Relic', desc: '+20% XP', cost: 750 }
+        ];
+        
+        function applyRelics() {
+            if (ownedRelics.includes('power')) player.damage *= 1.1;
+            if (ownedRelics.includes('life')) player.maxHealth += 25;
+            if (ownedRelics.includes('speed')) player.speed *= 1.1;
+        }
+        
+        function showRelicShop() {
+            document.getElementById('relic-coins').textContent = coins;
+            const grid = document.getElementById('relic-grid');
+            grid.innerHTML = '';
+            
+            relics.forEach(r => {
+                const owned = ownedRelics.includes(r.id);
+                const div = document.createElement('div');
+                div.className = 'relic-item' + (owned ? ' owned' : '');
+                div.innerHTML = `
+                    <div class="relic-icon">${r.icon}</div>
+                    <div class="relic-name">${r.name}</div>
+                    <div class="relic-desc">${r.desc}</div>
+                    <div class="relic-cost">${owned ? '✅ OWNED' : r.cost + '💰'}</div>
+                `;
+                if (!owned) {
+                    div.onclick = () => buyRelic(r);
+                }
+                grid.appendChild(div);
+            });
+            
+            document.getElementById('relic-shop').classList.add('visible');
+        }
+        
+        function closeRelicShop() { document.getElementById('relic-shop').classList.remove('visible'); }
+        
+        function buyRelic(relic) {
+            if (coins >= relic.cost && !ownedRelics.includes(relic.id)) {
+                coins -= relic.cost;
+                ownedRelics.push(relic.id);
+                localStorage.setItem('ai_roasters_relics', JSON.stringify(ownedRelics));
+                localStorage.setItem('ai_roasters_coins', coins);
+                notify('🎁 ' + relic.name + ' ACQUIRED!');
+                playSound(660, 0.2, 'sine');
+                showRelicShop();
+            }
+        }
+        
+        function triggerNewGamePlus() {
+            ngPlusLevel++;
+            localStorage.setItem('ai_roasters_ngplus', ngPlusLevel);
+            coins += 1000;
+            totalCoins += 1000;
+            localStorage.setItem('ai_roasters_coins', coins);
+            localStorage.setItem('ai_roasters_total_coins', totalCoins);
+            
+            notify('🔄 NEW GAME+ ' + ngPlusLevel + '! +1000 COINS!');
+            playSound(440, 0.3, 'sine');
+            playSound(660, 0.3, 'sine');
+            playSound(880, 0.3, 'sine');
+            
+            updateNGBadge();
+        }
+        
+        function updateNGBadge() {
+            const badge = document.getElementById('ng-badge');
+            if (ngPlusLevel > 0) {
+                badge.textContent = 'NG+' + ngPlusLevel;
+                badge.classList.add('visible');
+            }
+        }
+        
+        // Apply relics and show NG+ badge on load
+        setTimeout(() => {
+            applyRelics();
+            updateNGBadge();
+        }, 100);
+        
         // Final boss (wave 20)
         let finalBoss = null;
         
@@ -1005,6 +1116,9 @@
                 finalBoss.el.remove();
                 finalBoss = null;
                 playSound(880, 0.5, 'sine');
+                
+                // Trigger New Game+
+                setTimeout(() => triggerNewGamePlus(), 2000);
             }
         }
         
