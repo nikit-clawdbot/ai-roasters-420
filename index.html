@@ -81,6 +81,12 @@
         @keyframes notifIn { from { opacity: 0; transform: translateY(-20px); } }
         @keyframes notifOut { to { opacity: 0; } }
         
+        /* Floating damage numbers */
+        .damage-num { position: absolute; font-weight: bold; pointer-events: none; animation: damageFloat 0.8s forwards; z-index: 200; text-shadow: 2px 2px 0 #000; }
+        .damage-num.normal { font-size: 16px; color: #fff; }
+        .damage-num.crit { font-size: 24px; color: #ffcc00; }
+        @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-40px) scale(0.5); } }
+        
         #damage-flash { position: fixed; inset: 0; background: rgba(255,0,0,0.3); pointer-events: none; opacity: 0; z-index: 50; }
         #damage-flash.visible { opacity: 1; animation: flash 0.2s; }
         @keyframes flash { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
@@ -168,7 +174,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v35 — DASH MECHANIC</div>
+        <div class="menu-version">v36 — CRITICAL HITS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('boss')">👹 BOSS RUSH</button>
         <button class="menu-btn" onclick="startGame('endless')">∞ ENDLESS</button>
@@ -427,9 +433,19 @@
                 const dist = Math.sqrt(Math.pow(e.x - player.x, 2) + Math.pow(e.y - player.y, 2));
                 if (dist < range) {
                     hitAny = true;
-                    e.hp -= player.damage;
+                    
+                    // Critical hit chance (20%)
+                    const isCrit = Math.random() < 0.2;
+                    const damage = isCrit ? player.damage * 2.5 : player.damage;
+                    e.hp -= damage;
+                    
+                    // Show damage number
+                    showDamageNumber(e.x, e.y, Math.floor(damage), isCrit);
+                    
                     e.el.classList.add('hit');
                     setTimeout(() => e.el.classList.remove('hit'), 100);
+                    
+                    if (isCrit) playSound(150, 0.15, 'square');
                     
                     if (e.hp <= 0) killEnemy(e);
                 }
@@ -529,6 +545,16 @@
                 playSound(523, 0.2, 'sine');
                 playSound(659, 0.2, 'sine');
             }
+        }
+        
+        function showDamageNumber(x, y, damage, isCrit) {
+            const el = document.createElement('div');
+            el.className = 'damage-num ' + (isCrit ? 'crit' : 'normal');
+            el.textContent = (isCrit ? '💥 ' : '') + damage;
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            document.getElementById('game').appendChild(el);
+            setTimeout(() => el.remove(), 800);
         }
         
         function notify(text) {
