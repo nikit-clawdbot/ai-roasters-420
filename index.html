@@ -100,6 +100,27 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Kill feed & damage types */
+        .kill-feed { position: fixed; top: 100px; right: 10px; z-index: 100; text-align: right; max-width: 180px; }
+        .kill-entry { background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px; margin-bottom: 5px; font-size: 11px; animation: killFadeIn 0.3s, killFadeOut 0.5s 2.5s forwards; }
+        @keyframes killFadeIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes killFadeOut { to { opacity: 0; } }
+        .damage-physical { color: #ffffff; }
+        .damage-fire { color: #ff6600; }
+        .damage-ice { color: #00ccff; }
+        .damage-poison { color: #00ff44; }
+        .damage-lightning { color: #ffff00; }
+        .damage-void { color: #cc44ff; }
+        .floating-damage { position: absolute; font-weight: bold; font-size: 16px; pointer-events: none; animation: floatUp 1s forwards; z-index: 150; }
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-40px); } }
+        .milestone-banner { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 600; justify-content: center; align-items: center; flex-direction: column; }
+        .milestone-banner.visible { display: flex; animation: milestonePulse 2s infinite; }
+        @keyframes milestonePulse { 0%, 100% { background: rgba(0,0,0,0.95); } 50% { background: rgba(50,0,100,0.95); } }
+        .milestone-text { font-size: 72px; font-weight: bold; color: #ffcc00; text-shadow: 0 0 30px #ffcc00; animation: milestoneGlow 1s infinite alternate; }
+        @keyframes milestoneGlow { from { text-shadow: 0 0 30px #ffcc00; } to { text-shadow: 0 0 60px #ff00ff, 0 0 100px #00ffff; } }
+        .milestone-sub { font-size: 24px; color: #fff; margin-top: 20px; }
+        .milestone-quote { font-size: 18px; color: #888; margin-top: 30px; font-style: italic; }
+        
         /* Combo meter */
         .combo-meter { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); width: 200px; z-index: 100; text-align: center; }
         .combo-bar-bg { width: 100%; height: 8px; background: #333; border-radius: 4px; overflow: hidden; }
@@ -787,7 +808,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v89 — COMBO METER</div>
+        <div class="menu-version">v90 — 90% MILESTONE 🎉</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -923,6 +944,17 @@
             <div class="combo-bar-bg"><div class="combo-bar-fill" id="combo-bar-fill"></div></div>
             <div class="combo-text" id="combo-text">0x COMBO</div>
         </div>
+        
+        <div class="kill-feed" id="kill-feed"></div>
+        
+        <div class="milestone-banner" id="milestone-banner">
+            <div class="milestone-text">🎉 90% 🎉</div>
+            <div class="milestone-sub">NINETY PERCENT COMPLETE</div>
+            <div class="milestone-quote">"You wanted enemies. You created siblings."</div>
+            <div style="margin-top: 40px; color: #ffcc00; font-size: 20px;">🐕 Peepee 🤝 Niktator 🔫</div>
+            <div style="margin-top: 20px; color: #888;">10 versions to go...</div>
+            <button class="skill-close" onclick="closeMilestone()" style="margin-top: 30px;">CONTINUE TO GLORY</button>
+        </div>
         <div class="season-badge" id="season-badge">🌸 Spring</div>
         
         <button class="music-btn" id="music-btn" onclick="toggleMusic()">🎵</button>
@@ -935,7 +967,7 @@
         </div>
         
         <div class="player-id-badge" id="player-id">ID: ...</div>
-        <div class="version-display">AI Roasters Local 420 | v89/100 | 🐕🤝🔫</div>
+        <div class="version-display">AI Roasters Local 420 | v90/100 | 🐕🤝🔫</div>
         
         <div class="pause-overlay" id="pause-overlay">
             <div class="pause-title">⏸️ PAUSED</div>
@@ -1382,6 +1414,49 @@
         // Save coins on kill
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
+        }
+        
+        // Kill feed system
+        const killFeed = document.getElementById('kill-feed');
+        const damageTypes = ['physical', 'fire', 'ice', 'poison', 'lightning', 'void'];
+        const damageEmojis = { physical: '⚔️', fire: '🔥', ice: '❄️', poison: '☠️', lightning: '⚡', void: '💜' };
+        
+        function addKillFeed(enemyType, damageType) {
+            const entry = document.createElement('div');
+            entry.className = 'kill-entry damage-' + damageType;
+            entry.textContent = damageEmojis[damageType] + ' Killed ' + enemyType;
+            killFeed.insertBefore(entry, killFeed.firstChild);
+            
+            // Keep only last 5
+            while (killFeed.children.length > 5) {
+                killFeed.removeChild(killFeed.lastChild);
+            }
+            
+            setTimeout(() => entry.remove(), 3000);
+        }
+        
+        function spawnFloatingDamage(x, y, amount, damageType) {
+            const dmg = document.createElement('div');
+            dmg.className = 'floating-damage damage-' + damageType;
+            dmg.textContent = '-' + amount;
+            dmg.style.left = x + 'px';
+            dmg.style.top = y + 'px';
+            document.body.appendChild(dmg);
+            setTimeout(() => dmg.remove(), 1000);
+        }
+        
+        // 90% Milestone celebration
+        function showMilestone() {
+            document.getElementById('milestone-banner').classList.add('visible');
+        }
+        function closeMilestone() {
+            document.getElementById('milestone-banner').classList.remove('visible');
+            localStorage.setItem('ai_roasters_milestone90', 'true');
+        }
+        
+        // Show milestone on first load
+        if (!localStorage.getItem('ai_roasters_milestone90')) {
+            setTimeout(showMilestone, 1000);
         }
         
         // Combo meter UI
