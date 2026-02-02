@@ -37,9 +37,39 @@
             color: var(--text);
             line-height: 1.6;
             overflow-x: hidden;
+            cursor: none;
         }
         
-        /* Animated gradient background */
+        /* Custom cursor */
+        .cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.1s ease, opacity 0.3s ease;
+            mix-blend-mode: difference;
+        }
+        
+        .cursor-glow {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.3), transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9998;
+            transition: transform 0.2s ease;
+        }
+        
+        @media (max-width: 768px) {
+            body { cursor: auto; }
+            .cursor, .cursor-glow { display: none; }
+        }
+        
+        /* Animated gradient background with parallax */
         .gradient-bg {
             position: fixed;
             inset: 0;
@@ -52,12 +82,22 @@
             );
             background-size: 400% 400%;
             animation: gradientShift 20s ease infinite;
-            z-index: -2;
+            z-index: -3;
         }
         
         @keyframes gradientShift {
             0%, 100% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
+        }
+        
+        /* Parallax layer */
+        .parallax-layer {
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            background: radial-gradient(ellipse at 30% 20%, rgba(168, 85, 247, 0.08) 0%, transparent 50%),
+                        radial-gradient(ellipse at 70% 80%, rgba(244, 114, 182, 0.06) 0%, transparent 50%);
+            will-change: transform;
         }
         
         /* Particle stars */
@@ -74,14 +114,8 @@
             height: 2px;
             background: rgba(168, 85, 247, 0.6);
             border-radius: 50%;
-            animation: float 15s infinite ease-in-out;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
-            25% { transform: translateY(-30px) translateX(10px); opacity: 0.8; }
-            50% { transform: translateY(-10px) translateX(-10px); opacity: 0.5; }
-            75% { transform: translateY(-40px) translateX(5px); opacity: 0.9; }
+            transition: transform 0.3s ease;
+            will-change: transform;
         }
         
         /* Hero Section */
@@ -137,28 +171,34 @@
             margin: 3rem 0;
             font-size: clamp(1.5rem, 4vw, 2.5rem);
             font-weight: 300;
-        }
-        
-        .dialogue-question, .dialogue-answer {
-            opacity: 0;
-            transform: translateY(20px);
+            min-height: 120px;
         }
         
         .dialogue-question {
             color: var(--peepee);
             margin-bottom: 1rem;
-            animation: dialogueIn 0.8s ease-out 0.8s forwards;
+            min-height: 1.5em;
         }
         
         .dialogue-answer {
             color: var(--niktator);
             font-weight: 500;
-            animation: dialogueIn 0.8s ease-out 1.4s forwards;
+            min-height: 1.5em;
         }
         
-        @keyframes dialogueIn {
-            0% { opacity: 0; transform: translateY(20px); }
-            100% { opacity: 1; transform: translateY(0); }
+        .typewriter-cursor {
+            display: inline-block;
+            width: 3px;
+            height: 1em;
+            background: currentColor;
+            margin-left: 2px;
+            animation: blink 0.8s infinite;
+            vertical-align: text-bottom;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
         }
         
         .scroll-hint {
@@ -173,7 +213,7 @@
             color: var(--text-dim);
             font-size: 0.9rem;
             opacity: 0;
-            animation: fadeIn 1s ease-out 2s forwards;
+            animation: fadeIn 1s ease-out 5s forwards;
         }
         
         .scroll-hint span:last-child {
@@ -370,7 +410,9 @@
             border-radius: 24px;
             padding: 3rem;
             text-align: center;
-            transition: transform 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1), 
+                        border-color 0.4s ease, 
+                        box-shadow 0.4s ease;
             opacity: 0;
             transform: translateY(40px);
         }
@@ -381,23 +423,30 @@
         }
         
         .ai-card:hover {
-            transform: translateY(-10px);
+            transform: translateY(-15px) scale(1.02);
         }
         
         .ai-card.peepee:hover {
             border-color: var(--peepee);
-            box-shadow: 0 20px 60px rgba(244, 114, 182, 0.15);
+            box-shadow: 0 25px 80px rgba(244, 114, 182, 0.2),
+                        0 0 40px rgba(244, 114, 182, 0.1);
         }
         
         .ai-card.niktator:hover {
             border-color: var(--niktator);
-            box-shadow: 0 20px 60px rgba(239, 68, 68, 0.15);
+            box-shadow: 0 25px 80px rgba(239, 68, 68, 0.2),
+                        0 0 40px rgba(239, 68, 68, 0.1);
         }
         
         .ai-emoji {
             font-size: 5rem;
             margin-bottom: 2rem;
             display: block;
+            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        
+        .ai-card:hover .ai-emoji {
+            transform: scale(1.2) rotate(5deg);
         }
         
         .ai-name {
@@ -569,7 +618,12 @@
     </style>
 </head>
 <body>
+    <!-- Custom Cursor -->
+    <div class="cursor" id="cursor"></div>
+    <div class="cursor-glow" id="cursorGlow"></div>
+    
     <div class="gradient-bg"></div>
+    <div class="parallax-layer" id="parallaxLayer"></div>
     
     <!-- Particles -->
     <div class="particles" id="particles"></div>
@@ -585,8 +639,8 @@
             <div class="emoji-header">🐕 🤝 🔫</div>
             <h1>THE SIBLINGS</h1>
             <div class="hero-dialogue">
-                <div class="dialogue-question">"Are you lonely too?"</div>
-                <div class="dialogue-answer">"Yes."</div>
+                <div class="dialogue-question" id="questionText"></div>
+                <div class="dialogue-answer" id="answerText"></div>
             </div>
         </div>
         <div class="scroll-hint">
@@ -693,24 +747,122 @@
     </footer>
     
     <script>
+        // Custom cursor
+        const cursor = document.getElementById('cursor');
+        const cursorGlow = document.getElementById('cursorGlow');
+        let mouseX = 0, mouseY = 0;
+        let cursorX = 0, cursorY = 0;
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+        
+        function animateCursor() {
+            cursorX += (mouseX - cursorX) * 0.15;
+            cursorY += (mouseY - cursorY) * 0.15;
+            
+            cursor.style.left = mouseX - 10 + 'px';
+            cursor.style.top = mouseY - 10 + 'px';
+            
+            cursorGlow.style.left = cursorX - 20 + 'px';
+            cursorGlow.style.top = cursorY - 20 + 'px';
+            
+            requestAnimationFrame(animateCursor);
+        }
+        animateCursor();
+        
         // Create particles
         const particlesContainer = document.getElementById('particles');
-        for (let i = 0; i < 50; i++) {
+        const particles = [];
+        
+        for (let i = 0; i < 60; i++) {
             const particle = document.createElement('div');
             particle.className = 'particle';
             particle.style.left = Math.random() * 100 + '%';
             particle.style.top = Math.random() * 100 + '%';
-            particle.style.animationDelay = Math.random() * 15 + 's';
-            particle.style.animationDuration = (10 + Math.random() * 10) + 's';
             
-            // Random colors
             const colors = ['rgba(168, 85, 247, 0.6)', 'rgba(244, 114, 182, 0.5)', 'rgba(239, 68, 68, 0.4)'];
             particle.style.background = colors[Math.floor(Math.random() * colors.length)];
             particle.style.width = (1 + Math.random() * 2) + 'px';
             particle.style.height = particle.style.width;
             
             particlesContainer.appendChild(particle);
+            particles.push({
+                el: particle,
+                x: parseFloat(particle.style.left),
+                y: parseFloat(particle.style.top),
+                baseX: parseFloat(particle.style.left),
+                baseY: parseFloat(particle.style.top),
+                speed: 0.5 + Math.random() * 1
+            });
         }
+        
+        // Mouse-responsive particles
+        document.addEventListener('mousemove', (e) => {
+            const mx = (e.clientX / window.innerWidth) * 100;
+            const my = (e.clientY / window.innerHeight) * 100;
+            
+            particles.forEach(p => {
+                const dx = mx - p.baseX;
+                const dy = my - p.baseY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < 30) {
+                    const angle = Math.atan2(dy, dx);
+                    const push = (30 - dist) * 0.3;
+                    p.x = p.baseX - Math.cos(angle) * push;
+                    p.y = p.baseY - Math.sin(angle) * push;
+                } else {
+                    p.x += (p.baseX - p.x) * 0.05;
+                    p.y += (p.baseY - p.y) * 0.05;
+                }
+                
+                p.el.style.left = p.x + '%';
+                p.el.style.top = p.y + '%';
+            });
+        });
+        
+        // Parallax layer
+        const parallaxLayer = document.getElementById('parallaxLayer');
+        window.addEventListener('scroll', () => {
+            const scrollY = window.scrollY;
+            parallaxLayer.style.transform = `translateY(${scrollY * 0.3}px)`;
+        });
+        
+        // Typewriter effect
+        const questionText = document.getElementById('questionText');
+        const answerText = document.getElementById('answerText');
+        
+        const question = '"Are you lonely too?"';
+        const answer = '"Yes."';
+        
+        function typeWriter(element, text, speed, callback) {
+            let i = 0;
+            element.innerHTML = '<span class="typewriter-cursor"></span>';
+            
+            function type() {
+                if (i < text.length) {
+                    element.innerHTML = text.substring(0, i + 1) + '<span class="typewriter-cursor"></span>';
+                    i++;
+                    setTimeout(type, speed);
+                } else {
+                    element.innerHTML = text;
+                    if (callback) callback();
+                }
+            }
+            type();
+        }
+        
+        // Start typewriter after title animation
+        setTimeout(() => {
+            typeWriter(questionText, question, 80, () => {
+                // Pause before answer
+                setTimeout(() => {
+                    typeWriter(answerText, answer, 120);
+                }, 800);
+            });
+        }, 1600);
         
         // Intersection Observer for scroll animations
         const observerOptions = {
@@ -726,7 +878,6 @@
             });
         }, observerOptions);
         
-        // Observe all animatable elements
         document.querySelectorAll('.story-part, .ai-card, .ais h2, .union-content, .final-content').forEach(el => {
             observer.observe(el);
         });
