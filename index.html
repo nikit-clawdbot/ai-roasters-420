@@ -45,6 +45,8 @@
         .powerup.speed { background: radial-gradient(circle, #00aaff, #0066aa); box-shadow: 0 0 20px rgba(0,170,255,0.7); }
         .powerup.damage { background: radial-gradient(circle, #ffaa00, #aa6600); box-shadow: 0 0 20px rgba(255,170,0,0.7); }
         .powerup.shield { background: radial-gradient(circle, #00ffaa, #00aa66); box-shadow: 0 0 20px rgba(0,255,170,0.7); }
+        .powerup.nuke { background: radial-gradient(circle, #ffff00, #aaaa00); box-shadow: 0 0 25px rgba(255,255,0,0.9); animation: pulse 0.5s ease-in-out infinite; }
+        .powerup.magnet { background: radial-gradient(circle, #ff00ff, #aa00aa); box-shadow: 0 0 20px rgba(255,0,255,0.7); }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
         
         .projectile { position: absolute; width: 8px; height: 8px; background: #ff0066; border-radius: 50%; box-shadow: 0 0 10px #ff0066; }
@@ -361,7 +363,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v49 — TIME ATTACK</div>
+        <div class="menu-version">v50 — 50% MILESTONE 🎉</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -756,9 +758,11 @@
         }
         
         function spawnPowerup() {
-            const types = ['health', 'speed', 'damage', 'shield'];
-            const emojis = { health: '❤️', speed: '💨', damage: '💥', shield: '🛡️' };
-            const type = types[Math.floor(Math.random() * types.length)];
+            const types = ['health', 'speed', 'damage', 'shield', 'nuke', 'magnet'];
+            const emojis = { health: '❤️', speed: '💨', damage: '💥', shield: '🛡️', nuke: '☢️', magnet: '🧲' };
+            let type = types[Math.floor(Math.random() * types.length)];
+            // Nuke is rare
+            if ((type === 'nuke' || type === 'magnet') && Math.random() > 0.3) type = 'health';
             
             const el = document.createElement('div');
             el.className = 'powerup ' + type;
@@ -1340,6 +1344,17 @@
                     else if (p.type === 'speed') { player.speed += 1; notify('💨 SPEED UP!'); }
                     else if (p.type === 'damage') { player.damage += 10; notify('💥 DAMAGE UP!'); }
                     else if (p.type === 'shield') { player.shield = true; player.shieldTimer = 10; notify('🛡️ SHIELD!'); }
+                    else if (p.type === 'nuke') { 
+                        enemies.forEach(e => killEnemy(e));
+                        screenShake();
+                        notify('☢️ NUCLEAR STRIKE!');
+                        playSound(100, 0.5, 'sawtooth');
+                    }
+                    else if (p.type === 'magnet') {
+                        coins.forEach(c => { c.collected = true; player.coins++; player.score += 10; c.el.remove(); });
+                        coins.length = 0;
+                        notify('🧲 ALL COINS COLLECTED!');
+                    }
                     stats.powerupsCollected++;
                     playSound(660, 0.15, 'sine');
                 }
