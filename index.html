@@ -100,6 +100,17 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Challenge mode */
+        .challenge-select { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
+        .challenge-select.visible { display: flex; }
+        .challenge-select h2 { color: #ff4444; font-size: 28px; margin-bottom: 20px; }
+        .challenge-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 400px; }
+        .challenge-item { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; text-align: center; border: 2px solid #ff4444; cursor: pointer; }
+        .challenge-item:hover { background: rgba(255,68,68,0.2); }
+        .challenge-icon { font-size: 32px; }
+        .challenge-name { font-size: 14px; color: #fff; margin-top: 8px; }
+        .challenge-desc { font-size: 11px; color: #888; margin-top: 5px; }
+        
         /* Lifetime stats */
         .stats-panel { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
         .stats-panel.visible { display: flex; }
@@ -574,12 +585,13 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v71 — LIFETIME STATS</div>
+        <div class="menu-version">v72 — CHALLENGE MODE</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
         <button class="menu-btn" onclick="startGame('boss')">👹 BOSS RUSH</button>
         <button class="menu-btn" onclick="startGame('endless')">∞ ENDLESS</button>
+        <button class="menu-btn" onclick="showChallenges()">🎯 CHALLENGES</button>
         <button class="menu-btn" onclick="showStats()">📊 STATS</button>
         <button class="menu-btn" onclick="showAchievementsGallery()">🏆 ACHIEVEMENTS</button>
         <button class="menu-btn" onclick="showShop()">🛒 SHOP</button>
@@ -655,6 +667,33 @@
             <h2>📈 LIFETIME STATS</h2>
             <div class="stats-grid" id="stats-grid"></div>
             <button class="skill-close" onclick="closeLifetimeStats()">CLOSE</button>
+        </div>
+        
+        <div class="challenge-select" id="challenge-select">
+            <h2>🎯 CHALLENGES</h2>
+            <div class="challenge-grid">
+                <div class="challenge-item" onclick="startChallenge('noheal')">
+                    <div class="challenge-icon">💔</div>
+                    <div class="challenge-name">No Heal</div>
+                    <div class="challenge-desc">No health regen or pickups</div>
+                </div>
+                <div class="challenge-item" onclick="startChallenge('glass')">
+                    <div class="challenge-icon">🪟</div>
+                    <div class="challenge-name">Glass Cannon</div>
+                    <div class="challenge-desc">2x damage, 1 HP</div>
+                </div>
+                <div class="challenge-item" onclick="startChallenge('swarm')">
+                    <div class="challenge-icon">🐝</div>
+                    <div class="challenge-name">Swarm</div>
+                    <div class="challenge-desc">3x enemy spawn rate</div>
+                </div>
+                <div class="challenge-item" onclick="startChallenge('speed')">
+                    <div class="challenge-icon">⚡</div>
+                    <div class="challenge-name">Speed Run</div>
+                    <div class="challenge-desc">Everything 2x faster</div>
+                </div>
+            </div>
+            <button class="skill-close" onclick="closeChallenges()">CLOSE</button>
         </div>
     </div>
 
@@ -850,6 +889,33 @@
         // Save coins on kill
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
+        }
+        
+        // Challenge mode
+        let activeChallenge = null;
+        
+        function showChallenges() { document.getElementById('challenge-select').classList.add('visible'); }
+        function closeChallenges() { document.getElementById('challenge-select').classList.remove('visible'); }
+        
+        function startChallenge(type) {
+            activeChallenge = type;
+            closeChallenges();
+            
+            if (type === 'noheal') {
+                notify('💔 NO HEAL CHALLENGE!');
+            } else if (type === 'glass') {
+                player.maxHealth = 1;
+                player.health = 1;
+                player.damage *= 2;
+                notify('🪟 GLASS CANNON CHALLENGE!');
+            } else if (type === 'swarm') {
+                notify('🐝 SWARM CHALLENGE!');
+            } else if (type === 'speed') {
+                player.speed *= 2;
+                notify('⚡ SPEED RUN CHALLENGE!');
+            }
+            
+            startGame('normal');
         }
         
         // Lifetime stats panel
@@ -2500,7 +2566,12 @@
                 }
                 
                 // Endless mode respawn
-                if (gameMode === 'endless' && enemies.length < 10) spawnEnemy();
+                if (gameMode === 'endless' && enemies.length < 10) {
+                    spawnEnemy();
+                    // Endless multiplier
+                    if (!player.endlessMultiplier) player.endlessMultiplier = 1.0;
+                    player.endlessMultiplier += 0.001;
+                }
             }, 300);
             
             checkLevelUp();
