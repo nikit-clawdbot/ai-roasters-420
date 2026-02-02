@@ -100,6 +100,20 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Daily login */
+        .daily-login { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); padding: 30px; border-radius: 15px; border: 3px solid #ffcc00; z-index: 500; text-align: center; display: none; }
+        .daily-login.visible { display: block; }
+        .daily-login h2 { color: #ffcc00; margin-bottom: 15px; }
+        .daily-login .streak { font-size: 48px; margin: 20px 0; }
+        .daily-login .reward { color: #00ff88; font-size: 24px; margin: 10px 0; }
+        .daily-login button { background: #ffcc00; color: #000; border: none; padding: 15px 40px; font-size: 18px; font-weight: bold; border-radius: 10px; cursor: pointer; margin-top: 15px; }
+        
+        /* Level up effect */
+        .level-up-burst { position: fixed; top: 50%; left: 50%; width: 100px; height: 100px; border: 5px solid #ffcc00; border-radius: 50%; transform: translate(-50%, -50%); animation: levelBurst 1s ease-out forwards; pointer-events: none; z-index: 400; }
+        @keyframes levelBurst { 0% { width: 100px; height: 100px; opacity: 1; } 100% { width: 300vw; height: 300vw; opacity: 0; } }
+        .level-up-text { position: fixed; top: 35%; left: 50%; transform: translateX(-50%); font-size: 56px; font-weight: bold; color: #ffcc00; text-shadow: 0 0 30px #ffaa00; animation: levelText 1.5s ease-out forwards; z-index: 401; }
+        @keyframes levelText { 0% { transform: translateX(-50%) scale(0); } 50% { transform: translateX(-50%) scale(1.3); } 100% { transform: translateX(-50%) scale(1); opacity: 0; } }
+        
         /* Combo finisher */
         .combo-finisher { position: fixed; top: 50%; left: 50%; width: 50px; height: 50px; border: 4px solid #ffff00; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; animation: comboWave 0.8s ease-out forwards; z-index: 300; }
         @keyframes comboWave { 0% { width: 50px; height: 50px; opacity: 1; border-width: 4px; } 100% { width: 200vw; height: 200vw; opacity: 0; border-width: 1px; } }
@@ -360,7 +374,12 @@
             <button class="action-btn attack" id="btn-attack" onclick="attack()">🔥</button>
         </div>
         
-        <div class="special-cooldown" id="special-cooldown">💫 5s</div>
+        <div class="daily-login" id="daily-login">
+            <h2>📅 DAILY LOGIN</h2>
+            <div class="streak" id="login-streak">🔥 1</div>
+            <div class="reward" id="login-reward">+25 💰</div>
+            <button onclick="claimDailyLogin()">CLAIM!</button>
+        </div>
         
         <div class="rage-bar"><div class="rage-bar-fill" id="rage-bar"></div></div>
         <div class="rage-overlay" id="rage-overlay"></div>
@@ -428,7 +447,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v55 — COMBO FINISHER</div>
+        <div class="menu-version">v56 — DAILY LOGIN + LEVELS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -633,6 +652,80 @@
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
+        
+        // Daily login system
+        let playerLevel = parseInt(localStorage.getItem('ai_roasters_level') || '1');
+        let playerXp = parseInt(localStorage.getItem('ai_roasters_xp') || '0');
+        let xpToLevel = 100;
+        
+        function checkDailyLogin() {
+            const lastLogin = localStorage.getItem('ai_roasters_last_login');
+            const today = new Date().toDateString();
+            const streak = parseInt(localStorage.getItem('ai_roasters_streak') || '0');
+            
+            if (lastLogin !== today) {
+                const yesterday = new Date(Date.now() - 86400000).toDateString();
+                const newStreak = (lastLogin === yesterday) ? streak + 1 : 1;
+                
+                localStorage.setItem('ai_roasters_streak', newStreak);
+                document.getElementById('login-streak').textContent = '🔥 ' + newStreak;
+                
+                const reward = Math.min(200, 25 * newStreak);
+                document.getElementById('login-reward').textContent = '+' + reward + ' 💰';
+                document.getElementById('daily-login').classList.add('visible');
+            }
+        }
+        
+        function claimDailyLogin() {
+            const streak = parseInt(localStorage.getItem('ai_roasters_streak') || '1');
+            const reward = Math.min(200, 25 * streak);
+            totalCoins += reward;
+            saveTotalCoins();
+            localStorage.setItem('ai_roasters_last_login', new Date().toDateString());
+            document.getElementById('daily-login').classList.remove('visible');
+            notify('📅 +' + reward + ' coins! Streak: ' + streak);
+            playSound(880, 0.3, 'sine');
+        }
+        
+        function addXp(amount) {
+            playerXp += amount;
+            while (playerXp >= xpToLevel) {
+                playerXp -= xpToLevel;
+                playerLevel++;
+                xpToLevel = Math.floor(xpToLevel * 1.5);
+                levelUp();
+            }
+            localStorage.setItem('ai_roasters_xp', playerXp);
+            localStorage.setItem('ai_roasters_level', playerLevel);
+        }
+        
+        function levelUp() {
+            // Visual burst
+            const burst = document.createElement('div');
+            burst.className = 'level-up-burst';
+            document.body.appendChild(burst);
+            setTimeout(() => burst.remove(), 1000);
+            
+            // Text
+            const text = document.createElement('div');
+            text.className = 'level-up-text';
+            text.textContent = '⭐ LEVEL ' + playerLevel + '! ⭐';
+            document.body.appendChild(text);
+            setTimeout(() => text.remove(), 1500);
+            
+            // Rewards
+            player.maxHealth += 5;
+            player.health = player.maxHealth;
+            totalCoins += 50;
+            saveTotalCoins();
+            
+            notify('⭐ LEVEL UP! +5 HP, +50 coins!');
+            playSound(440, 0.3, 'sine');
+            playSound(880, 0.3, 'sine');
+        }
+        
+        // Check daily login on load
+        setTimeout(checkDailyLogin, 500);
         
         // Combo finisher
         function triggerComboFinisher() {
@@ -1299,6 +1392,7 @@
             
             player.score += e.score * (1 + Math.floor(player.combo / 5));
             player.xp += e.xp;
+            addXp(e.xp); // Persistent XP
             showXpParticle(e.x, e.y, e.xp);
             spawnParticles(e.x, e.y, '#ff00ff', 12);
             killFlash();
