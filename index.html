@@ -93,6 +93,18 @@
         .damage-num { position: absolute; font-weight: bold; pointer-events: none; animation: damageFloat 0.8s forwards; z-index: 200; text-shadow: 2px 2px 0 #000; }
         .damage-num.normal { font-size: 16px; color: #fff; }
         .damage-num.crit { font-size: 24px; color: #ffcc00; }
+        /* Daily challenge */
+        .daily-challenge { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 8px 15px; border-radius: 8px; border: 1px solid #ffcc00; z-index: 100; text-align: center; pointer-events: none; }
+        .daily-title { font-size: 10px; color: #ffcc00; letter-spacing: 2px; }
+        .daily-desc { font-size: 12px; color: #fff; margin: 3px 0; }
+        .daily-progress { width: 120px; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; overflow: hidden; margin-top: 5px; }
+        .daily-progress-fill { height: 100%; background: linear-gradient(90deg, #ffcc00, #ff8800); transition: width 0.3s; }
+        .daily-complete { color: #00ff88; }
+        
+        /* Screen shake */
+        .shake { animation: screenShake 0.2s; }
+        @keyframes screenShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        
         /* Environment hazards */
         .hazard { position: absolute; border-radius: 50%; pointer-events: none; animation: hazardPulse 1s infinite; }
         .hazard.fire { background: radial-gradient(circle, rgba(255,100,0,0.8), rgba(255,0,0,0.4)); box-shadow: 0 0 30px rgba(255,100,0,0.6); }
@@ -226,12 +238,18 @@
     <div id="damage-flash"></div>
     <div id="union-strike"></div>
     <div class="combo-big" id="combo-big"></div>
+    
+    <div class="daily-challenge" id="daily-challenge">
+        <div class="daily-title">🎯 DAILY CHALLENGE</div>
+        <div class="daily-desc" id="daily-desc">Loading...</div>
+        <div class="daily-progress"><div class="daily-progress-fill" id="daily-progress"></div></div>
+    </div>
     <div id="wave-banner"><div class="wave-title" id="wave-title">WAVE 1</div><div class="wave-sub" id="wave-sub">Get ready!</div></div>
     
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v41 — HAZARDS + XP PARTICLES</div>
+        <div class="menu-version">v42 — DAILY CHALLENGES</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('boss')">👹 BOSS RUSH</button>
@@ -606,7 +624,10 @@
                     e.el.classList.add('hit');
                     setTimeout(() => e.el.classList.remove('hit'), 100);
                     
-                    if (isCrit) playSound(150, 0.15, 'square');
+                    if (isCrit) {
+                        playSound(150, 0.15, 'square');
+                        screenShake();
+                    }
                     
                     if (e.hp <= 0) killEnemy(e);
                 }
@@ -1030,8 +1051,70 @@
             playSound(784, 0.15, 'sine');
         }
         
+        // Daily challenges
+        const dailyChallenges = [
+            { id: 'kill50', desc: 'Kill 50 enemies', target: 50, stat: 'kills' },
+            { id: 'wave5', desc: 'Reach wave 5', target: 5, stat: 'wave' },
+            { id: 'boss', desc: 'Defeat a boss', target: 1, stat: 'bossKills' },
+            { id: 'combo10', desc: 'Get a 10x combo', target: 10, stat: 'maxCombo' },
+            { id: 'score2000', desc: 'Score 2000 points', target: 2000, stat: 'score' },
+            { id: 'kill100', desc: 'Kill 100 enemies', target: 100, stat: 'kills' },
+            { id: 'wave10', desc: 'Reach wave 10', target: 10, stat: 'wave' }
+        ];
+        
+        const today = new Date().toDateString();
+        const savedDaily = JSON.parse(localStorage.getItem('ai_roasters_daily') || '{}');
+        let dailyChallenge, dailyProgress = 0, dailyComplete = false;
+        
+        if (savedDaily.date === today) {
+            dailyChallenge = dailyChallenges.find(c => c.id === savedDaily.id) || dailyChallenges[0];
+            dailyProgress = savedDaily.progress || 0;
+            dailyComplete = savedDaily.complete || false;
+        } else {
+            dailyChallenge = dailyChallenges[Math.floor(Math.random() * dailyChallenges.length)];
+            localStorage.setItem('ai_roasters_daily', JSON.stringify({ date: today, id: dailyChallenge.id, progress: 0, complete: false }));
+        }
+        
+        document.getElementById('daily-desc').textContent = dailyChallenge.desc;
+        document.getElementById('daily-progress').style.width = Math.min(100, (dailyProgress / dailyChallenge.target * 100)) + '%';
+        if (dailyComplete) document.getElementById('daily-desc').classList.add('daily-complete');
+        
+        function updateDailyChallenge() {
+            if (dailyComplete) return;
+            
+            let current = 0;
+            if (dailyChallenge.stat === 'kills') current = stats.kills;
+            else if (dailyChallenge.stat === 'wave') current = wave;
+            else if (dailyChallenge.stat === 'bossKills') current = stats.bossKills;
+            else if (dailyChallenge.stat === 'maxCombo') current = player.combo;
+            else if (dailyChallenge.stat === 'score') current = player.score;
+            
+            if (current > dailyProgress) {
+                dailyProgress = current;
+                document.getElementById('daily-progress').style.width = Math.min(100, (dailyProgress / dailyChallenge.target * 100)) + '%';
+                localStorage.setItem('ai_roasters_daily', JSON.stringify({ date: today, id: dailyChallenge.id, progress: dailyProgress, complete: dailyComplete }));
+            }
+            
+            if (dailyProgress >= dailyChallenge.target && !dailyComplete) {
+                dailyComplete = true;
+                player.score += 500;
+                notify('🎯 DAILY COMPLETE! +500');
+                document.getElementById('daily-desc').textContent = dailyChallenge.desc + ' ✓';
+                document.getElementById('daily-desc').classList.add('daily-complete');
+                playSound(523, 0.2, 'sine');
+                playSound(659, 0.2, 'sine');
+                playSound(784, 0.2, 'sine');
+                localStorage.setItem('ai_roasters_daily', JSON.stringify({ date: today, id: dailyChallenge.id, progress: dailyProgress, complete: true }));
+            }
+        }
+        
+        function screenShake() {
+            document.getElementById('game').classList.add('shake');
+            setTimeout(() => document.getElementById('game').classList.remove('shake'), 200);
+        }
+        
         // Track stats in game loop
-        setInterval(() => { if (playing) { stats.gameTime++; checkAchievements(); } }, 1000);
+        setInterval(() => { if (playing) { stats.gameTime++; checkAchievements(); updateDailyChallenge(); } }, 1000);
         
         // ==================== MINIMAP ====================
         const minimap = document.getElementById('minimap');
