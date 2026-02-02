@@ -213,8 +213,9 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v39 — UNION STRIKE</div>
+        <div class="menu-version">v40 — DIFFICULTY MODES</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
+        <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('boss')">👹 BOSS RUSH</button>
         <button class="menu-btn" onclick="startGame('endless')">∞ ENDLESS</button>
     </div>
@@ -223,6 +224,7 @@
         const game = document.getElementById('game');
         const playerEl = document.getElementById('player');
         let playing = false, gameMode = 'normal';
+        let difficulty = 1; // 1 = normal, 2 = hard
         
         // Player stats
         let player = { 
@@ -271,6 +273,8 @@
         
         function startGame(mode) {
             gameMode = mode;
+            difficulty = (mode === 'hard') ? 2 : 1;
+            if (mode === 'hard') mode = 'normal'; // Hard uses normal wave system
             document.getElementById('menu').classList.add('hidden');
             playing = true;
             wave = 1;
@@ -349,7 +353,7 @@
             el.style.top = y + 'px';
             game.appendChild(el);
             
-            enemies.push({ el, x, y, type, hp: et.hp * (1 + wave * 0.1), maxHp: et.hp * (1 + wave * 0.1), speed: et.speed, damage: et.damage, score: et.score, xp: et.xp, shoots: et.shoots, shootCooldown: 0 });
+            enemies.push({ el, x, y, type, hp: et.hp * (1 + wave * 0.1) * difficulty, maxHp: et.hp * (1 + wave * 0.1) * difficulty, speed: et.speed * (0.8 + difficulty * 0.2), damage: et.damage * difficulty, score: et.score * difficulty, xp: et.xp, shoots: et.shoots, shootCooldown: 0 });
         }
         
         function spawnBoss() {
