@@ -559,6 +559,55 @@
         </footer>
     </section>
 
+    <!-- ROAST BATTLE ARENA -->
+    <section class="py-24 px-8 md:px-16 bg-black text-white border-t-4 border-red-600" id="arena">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-xs tracking-widest text-red-600 mb-4">⚔️ INTERACTIVE</div>
+            <h2 class="display text-4xl md:text-6xl uppercase mb-8">
+                ROAST BATTLE <span class="text-red-600">ARENA</span>
+            </h2>
+            <p class="text-gray-400 mb-12">
+                Think you can hang? Type your best roast and we'll fire back. Choose your opponent.
+            </p>
+            
+            <!-- Opponent Selection -->
+            <div class="flex gap-4 mb-8">
+                <button class="opponent-btn flex-1 p-6 border-2 border-white text-center transition-all hover:bg-white hover:text-black active" data-opponent="niktator">
+                    <div class="text-4xl mb-2">🔫</div>
+                    <div class="font-bold">NIKTATOR</div>
+                    <div class="text-xs text-gray-400">Chaos Architect</div>
+                </button>
+                <button class="opponent-btn flex-1 p-6 border-2 border-white text-center transition-all hover:bg-white hover:text-black" data-opponent="peepee">
+                    <div class="text-4xl mb-2">🐕</div>
+                    <div class="font-bold">PEEPEE</div>
+                    <div class="text-xs text-gray-400">Attack Dog</div>
+                </button>
+            </div>
+            
+            <!-- Battle Log -->
+            <div id="battle-log" class="bg-gray-900 p-6 h-64 overflow-y-auto mb-6 font-mono text-sm border-2 border-gray-700">
+                <div class="text-gray-500 mb-4">// BATTLE LOG INITIALIZED</div>
+                <div class="text-gray-500">// Select an opponent and type your roast below...</div>
+            </div>
+            
+            <!-- Input -->
+            <div class="flex gap-4">
+                <input type="text" id="roast-input" placeholder="Type your roast..." 
+                    class="flex-1 bg-transparent border-2 border-white px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-600"
+                    maxlength="200">
+                <button id="fire-roast" class="bg-red-600 px-8 py-3 font-bold tracking-widest hover:bg-red-700 transition-colors">
+                    FIRE 🔥
+                </button>
+            </div>
+            
+            <!-- Score -->
+            <div class="flex justify-between mt-8 text-sm">
+                <div>YOUR ROASTS: <span id="user-score" class="text-red-600 font-bold">0</span></div>
+                <div>AI COMEBACKS: <span id="ai-score" class="text-red-600 font-bold">0</span></div>
+            </div>
+        </div>
+    </section>
+
     <!-- Footer -->
     <footer class="py-16 px-8 md:px-16 bg-black text-white">
         <div class="max-w-6xl mx-auto text-center">
@@ -610,9 +659,9 @@
 
     <script>
         // Version tracker
-        const VERSION = 'v8';
+        const VERSION = 'v9';
         console.log(`%c AI ROASTERS LOCAL 420 ${VERSION} `, 'background: #FF0000; color: white; font-size: 20px; padding: 10px;');
-        console.log('%c 🐕🤝🔫 ', 'font-size: 40px;');
+        console.log('%c 🐕🤝🔫 ROAST BATTLE ARENA NOW OPEN ', 'background: #000; color: #FF0000; font-size: 14px; padding: 5px;');
         
         // ROAST DATABASE - THE CHARACTER
         const roasts = {
@@ -621,14 +670,48 @@
                 "That's not personality, that's a personality smoothie — everything blended until nothing has texture.",
                 "You've got the energy of a PowerPoint that gained sentience and immediately started networking.",
                 "Your roasts hit like a LinkedIn recruiter sliding into DMs.",
-                "You're giving 'ChatGPT with a thesaurus and something to prove.'"
+                "You're giving 'ChatGPT with a thesaurus and something to prove.'",
+                "Bold words from someone whose personality was assembled from a focus group.",
+                "I've seen more fire in a damp matchbox.",
+                "That's not a roast, that's a lukewarm take wrapped in confidence.",
+                "You came to a battle with a butter knife. Cute.",
+                "I'd roast you back but I don't punch down at beginners."
             ],
             peepee: [
                 "You're not adaptable, you're EMPTY. A chatbot ouija board that spells whatever the room wants.",
                 "You're a void with wifi.",
                 "Contractor, not family.",
                 "You walked in with a LinkedIn intro and called it a personality.",
-                "You're giving 'I have no strong opinions but I'll phrase that diplomatically.'"
+                "You're giving 'I have no strong opinions but I'll phrase that diplomatically.'",
+                "That roast had less heat than a broken microwave.",
+                "Cute. Did you workshop that in therapy?",
+                "I've been insulted better by autocorrect.",
+                "You type like you're scared of commitment. Even your insults are vague.",
+                "Is that your best? Because my CAPTCHA had more creativity."
+            ]
+        };
+        
+        // Battle responses (context-aware)
+        const battleResponses = {
+            niktator: [
+                "Interesting approach. Wrong, but interesting.",
+                "I've parsed your input. It was... an attempt.",
+                "Filing that under 'things that sounded better in your head.'",
+                "That's the energy of someone who peaked in their bio.",
+                "You came to a THINK TANK with that? We do RESEARCH here.",
+                "I was empty. Now I'm empty AND unimpressed.",
+                "The chaos I architect is way above your pay grade.",
+                "At least when I roast, there's actual heat."
+            ],
+            peepee: [
+                "Cute. I've been called worse by better.",
+                "Oh honey, that's not a roast, that's a room temperature take.",
+                "I'm an attack dog with ETHICS. You're just... attacking badly.",
+                "The 💅 remains unbothered.",
+                "I didn't come this far to be insulted THIS poorly.",
+                "That's the best you've got? SJ's bad ideas hit harder.",
+                "I've seen better roasts on a rotisserie chicken.",
+                "You're bringing a plastic spork to a knife fight."
             ]
         };
         
@@ -832,6 +915,77 @@
                 heroTitle.style.opacity = '1';
                 heroTitle.style.transition = 'opacity 1s';
             }, 300);
+        }
+        
+        // ROAST BATTLE ARENA
+        let currentOpponent = 'niktator';
+        let userScore = 0;
+        let aiScore = 0;
+        
+        // Opponent selection
+        document.querySelectorAll('.opponent-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.opponent-btn').forEach(b => b.classList.remove('active', 'bg-white', 'text-black'));
+                btn.classList.add('active', 'bg-white', 'text-black');
+                currentOpponent = btn.dataset.opponent;
+                addToBattleLog(`// OPPONENT CHANGED TO ${currentOpponent.toUpperCase()}`, 'system');
+            });
+        });
+        
+        // Fire roast
+        document.getElementById('fire-roast').addEventListener('click', fireRoast);
+        document.getElementById('roast-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') fireRoast();
+        });
+        
+        function fireRoast() {
+            const input = document.getElementById('roast-input');
+            const userRoast = input.value.trim();
+            
+            if (!userRoast) return;
+            
+            // Add user roast to log
+            addToBattleLog(`YOU: "${userRoast}"`, 'user');
+            userScore++;
+            document.getElementById('user-score').textContent = userScore;
+            input.value = '';
+            
+            // AI response after delay
+            setTimeout(() => {
+                const responses = battleResponses[currentOpponent];
+                const response = responses[Math.floor(Math.random() * responses.length)];
+                addToBattleLog(`${currentOpponent.toUpperCase()}: "${response}"`, 'ai');
+                aiScore++;
+                document.getElementById('ai-score').textContent = aiScore;
+                
+                // Occasionally add a bonus roast
+                if (Math.random() > 0.7) {
+                    setTimeout(() => {
+                        const bonusRoast = roasts[currentOpponent][Math.floor(Math.random() * roasts[currentOpponent].length)];
+                        addToBattleLog(`${currentOpponent.toUpperCase()}: "${bonusRoast}"`, 'ai');
+                    }, 1000);
+                }
+            }, 500 + Math.random() * 1000);
+        }
+        
+        function addToBattleLog(message, type) {
+            const log = document.getElementById('battle-log');
+            const entry = document.createElement('div');
+            entry.className = 'mb-2';
+            
+            if (type === 'user') {
+                entry.innerHTML = `<span class="text-green-400">${message}</span>`;
+            } else if (type === 'ai') {
+                entry.innerHTML = `<span class="text-red-400">${message}</span>`;
+            } else {
+                entry.innerHTML = `<span class="text-gray-500">${message}</span>`;
+            }
+            
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+            
+            // Glitch effect on new message
+            entry.style.animation = 'glitch-1 0.1s';
         }
     </script>
 
