@@ -93,6 +93,19 @@
         .damage-num { position: absolute; font-weight: bold; pointer-events: none; animation: damageFloat 0.8s forwards; z-index: 200; text-shadow: 2px 2px 0 #000; }
         .damage-num.normal { font-size: 16px; color: #fff; }
         .damage-num.crit { font-size: 24px; color: #ffcc00; }
+        /* Achievements gallery */
+        .achievements-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 400; justify-content: center; align-items: center; flex-direction: column; overflow-y: auto; padding: 20px; }
+        .achievements-overlay.visible { display: flex; }
+        .achievements-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 400px; }
+        .achievement-item { background: rgba(255,255,255,0.1); padding: 15px 10px; border-radius: 10px; text-align: center; border: 2px solid #333; }
+        .achievement-item.unlocked { border-color: #ffcc00; background: rgba(255,204,0,0.1); }
+        .achievement-item .icon { font-size: 24px; }
+        .achievement-item .name { font-size: 10px; color: #888; margin-top: 5px; }
+        .achievement-item.unlocked .name { color: #fff; }
+        .achievements-title { font-size: 24px; color: #ffcc00; margin-bottom: 20px; }
+        .achievements-close { margin-top: 20px; padding: 10px 30px; background: #ffcc00; border: none; border-radius: 8px; color: #000; font-weight: bold; cursor: pointer; }
+        .achievement-progress { position: fixed; top: 60px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px; font-size: 12px; color: #ffcc00; }
+        
         /* Player trail */
         .player-trail { position: absolute; width: 10px; height: 10px; background: radial-gradient(circle, rgba(255,68,68,0.8), transparent); border-radius: 50%; pointer-events: none; animation: trailFade 0.5s forwards; }
         @keyframes trailFade { 0% { opacity: 0.8; transform: scale(1); } 100% { opacity: 0; transform: scale(0); } }
@@ -304,6 +317,14 @@
         </div>
     </div>
     
+    <div class="achievements-overlay" id="achievements-overlay">
+        <div class="achievements-title">🏆 ACHIEVEMENTS</div>
+        <div class="achievements-grid" id="achievements-grid"></div>
+        <button class="achievements-close" onclick="closeAchievements()">CLOSE</button>
+    </div>
+    
+    <div class="achievement-progress" id="achievement-progress">🏆 0/16</div>
+    
     <div id="notifications"></div>
     <div id="damage-flash"></div>
     <div id="union-strike"></div>
@@ -319,12 +340,13 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v45 — PARTICLE MADNESS</div>
+        <div class="menu-version">v46 — 16 ACHIEVEMENTS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('boss')">👹 BOSS RUSH</button>
         <button class="menu-btn" onclick="startGame('endless')">∞ ENDLESS</button>
         <button class="menu-btn" onclick="showStats()">📊 STATS</button>
+        <button class="menu-btn" onclick="showAchievementsGallery()">🏆 ACHIEVEMENTS</button>
     </div>
 
     <script>
@@ -1257,16 +1279,20 @@
         const achievements = {
             firstBlood: { name: 'FIRST BLOOD', desc: 'Kill your first enemy', icon: '🩸' },
             serialRoaster: { name: 'SERIAL ROASTER', desc: 'Kill 10 enemies', icon: '🔥' },
-            massacre: { name: 'MASSACRE', desc: 'Kill 100 enemies', icon: '💀' },
+            massacre: { name: 'MASSACRE', desc: 'Kill 50 enemies', icon: '💀' },
+            genocide: { name: 'GENOCIDE', desc: 'Kill 100 enemies', icon: '☠️' },
             bossSlayer: { name: 'BOSS SLAYER', desc: 'Defeat a boss', icon: '👹' },
-            survivor: { name: 'SURVIVOR', desc: 'Survive 5 minutes', icon: '⏱️' },
-            coinMaster: { name: 'COIN MASTER', desc: 'Collect 50 coins', icon: '💰' },
-            highRoller: { name: 'HIGH ROLLER', desc: 'Score 1000 points', icon: '🎰' },
-            comboKing: { name: 'COMBO KING', desc: 'Get 5x combo', icon: '⚡' },
-            waveMaster: { name: 'WAVE MASTER', desc: 'Reach wave 10', icon: '🌊' },
-            powerHungry: { name: 'POWER HUNGRY', desc: 'Collect 10 powerups', icon: '💪' },
-            untouchable: { name: 'UNTOUCHABLE', desc: 'Kill 20 enemies without damage', icon: '🛡️' },
-            speedDemon: { name: 'SPEED DEMON', desc: 'Kill 5 fast enemies', icon: '💨' }
+            bossHunter: { name: 'BOSS HUNTER', desc: 'Defeat 5 bosses', icon: '🏆' },
+            survivor: { name: 'SURVIVOR', desc: 'Reach wave 5', icon: '🌊' },
+            veteran: { name: 'VETERAN', desc: 'Reach wave 10', icon: '⚔️' },
+            comboStarter: { name: 'COMBO STARTER', desc: 'Get 5x combo', icon: '🔥' },
+            comboMaster: { name: 'COMBO MASTER', desc: 'Get 10x combo', icon: '💥' },
+            coinCollector: { name: 'COIN COLLECTOR', desc: 'Collect 50 coins', icon: '💰' },
+            rich: { name: 'RICH', desc: 'Collect 200 coins', icon: '💎' },
+            scorer: { name: 'SCORER', desc: 'Score 1000 points', icon: '🎯' },
+            highRoller: { name: 'HIGH ROLLER', desc: 'Score 5000 points', icon: '🎰' },
+            powerUser: { name: 'POWER USER', desc: 'Collect 10 powerups', icon: '⚡' },
+            masochist: { name: 'MASOCHIST', desc: 'Wave 3 on Hard mode', icon: '💀' }
         };
         
         let stats = { kills: 0, bossKills: 0, coinsCollected: 0, powerupsCollected: 0, fastKills: 0, killsWithoutDamage: 0, gameTime: 0 };
@@ -1275,16 +1301,44 @@
         function checkAchievements() {
             if (stats.kills >= 1) unlock('firstBlood');
             if (stats.kills >= 10) unlock('serialRoaster');
-            if (stats.kills >= 100) unlock('massacre');
+            if (stats.kills >= 50) unlock('massacre');
+            if (stats.kills >= 100) unlock('genocide');
             if (stats.bossKills >= 1) unlock('bossSlayer');
-            if (stats.gameTime >= 300) unlock('survivor');
-            if (stats.coinsCollected >= 50) unlock('coinMaster');
-            if (player.score >= 1000) unlock('highRoller');
-            if (player.combo >= 5) unlock('comboKing');
-            if (wave >= 10) unlock('waveMaster');
-            if (stats.powerupsCollected >= 10) unlock('powerHungry');
-            if (stats.killsWithoutDamage >= 20) unlock('untouchable');
-            if (stats.fastKills >= 5) unlock('speedDemon');
+            if (stats.bossKills >= 5) unlock('bossHunter');
+            if (wave >= 5) unlock('survivor');
+            if (wave >= 10) unlock('veteran');
+            if (player.combo >= 5) unlock('comboStarter');
+            if (player.combo >= 10) unlock('comboMaster');
+            if (stats.coinsCollected >= 50) unlock('coinCollector');
+            if (stats.coinsCollected >= 200) unlock('rich');
+            if (player.score >= 1000) unlock('scorer');
+            if (player.score >= 5000) unlock('highRoller');
+            if (stats.powerupsCollected >= 10) unlock('powerUser');
+            if (difficulty === 2 && wave >= 3) unlock('masochist');
+            
+            updateAchievementProgress();
+        }
+        
+        function updateAchievementProgress() {
+            document.getElementById('achievement-progress').textContent = '🏆 ' + unlockedAchievements.length + '/' + Object.keys(achievements).length;
+        }
+        
+        function showAchievementsGallery() {
+            const grid = document.getElementById('achievements-grid');
+            grid.innerHTML = '';
+            Object.entries(achievements).forEach(([id, a]) => {
+                const unlocked = unlockedAchievements.includes(id);
+                const item = document.createElement('div');
+                item.className = 'achievement-item' + (unlocked ? ' unlocked' : '');
+                item.innerHTML = '<div class="icon">' + (unlocked ? a.icon : '❓') + '</div><div class="name">' + a.name + '</div>';
+                item.title = a.desc;
+                grid.appendChild(item);
+            });
+            document.getElementById('achievements-overlay').classList.add('visible');
+        }
+        
+        function closeAchievements() {
+            document.getElementById('achievements-overlay').classList.remove('visible');
         }
         
         function unlock(id) {
