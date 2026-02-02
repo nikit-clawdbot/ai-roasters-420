@@ -100,6 +100,15 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Achievement gallery */
+        .achieve-gallery { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; overflow-y: auto; }
+        .achieve-gallery.visible { display: flex; }
+        .achieve-gallery h2 { color: #ffcc00; font-size: 28px; margin-bottom: 20px; }
+        .achieve-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 500px; }
+        .achieve-item { background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; text-align: center; border: 2px solid #333; font-size: 24px; opacity: 0.4; }
+        .achieve-item.unlocked { opacity: 1; border-color: #ffcc00; }
+        .achieve-item span { display: block; font-size: 10px; color: #aaa; margin-top: 5px; }
+        
         /* Quests */
         .quest-panel { position: fixed; top: 120px; right: 10px; background: rgba(0,0,0,0.9); border: 2px solid #8855ff; border-radius: 10px; padding: 12px; max-width: 180px; z-index: 150; display: none; }
         .quest-panel.visible { display: block; }
@@ -532,7 +541,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v67 — QUEST SYSTEM</div>
+        <div class="menu-version">v68 — 20 ACHIEVEMENTS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -545,6 +554,7 @@
         <button class="menu-btn" onclick="showSkillTree()">🌳 SKILLS</button>
         <button class="menu-btn" onclick="showPetShop()">🐾 PETS</button>
         <button class="menu-btn" onclick="showEquipment()">🎽 EQUIP</button>
+        <button class="menu-btn" onclick="showAchieveGallery()">🏆 ACHIEVE</button>
         <button class="menu-btn prestige-btn" id="prestige-btn" onclick="prestige()">✨ PRESTIGE</button>
         
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
@@ -590,12 +600,19 @@
             <div class="equip-slots" id="equip-slots"></div>
             <button class="skill-close" onclick="closeEquipment()">CLOSE</button>
         </div>
+        
+        <div class="achieve-gallery" id="achieve-gallery">
+            <h2>🏆 ACHIEVEMENTS</h2>
+            <div style="color:#ffcc00;margin-bottom:15px;" id="achieve-count">0/20 Unlocked</div>
+            <div class="achieve-grid" id="achieve-grid"></div>
+            <button class="skill-close" onclick="closeAchieveGallery()">CLOSE</button>
+        </div>
     </div>
 
     <script>
         const game = document.getElementById('game');
         const playerEl = document.getElementById('player');
-        let playing = false, gameMode = 'normal';
+        let playing = false, gameMode = 'normal', frameCount = 0;
         let difficulty = 1; // 1 = normal, 2 = hard
         let timeLeft = 60;
         
@@ -785,6 +802,84 @@
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
+        
+        // Achievement gallery
+        const allAchievements = [
+            { id: 'first_blood', emoji: '🎮', name: 'First Blood', desc: 'Kill 1 enemy' },
+            { id: 'centurion', emoji: '💀', name: 'Centurion', desc: '100 kills' },
+            { id: 'mass_murder', emoji: '☠️', name: 'Mass Murderer', desc: '500 kills' },
+            { id: 'high_score', emoji: '⭐', name: 'High Scorer', desc: '5000 score' },
+            { id: 'score_master', emoji: '🌟', name: 'Score Master', desc: '10000 score' },
+            { id: 'combo_king', emoji: '🔥', name: 'Combo King', desc: '10x combo' },
+            { id: 'combo_god', emoji: '💥', name: 'Combo God', desc: '25x combo' },
+            { id: 'wave_rider', emoji: '🌊', name: 'Wave Rider', desc: 'Wave 10' },
+            { id: 'boss_slayer', emoji: '👿', name: 'Boss Slayer', desc: '5 bosses' },
+            { id: 'rich', emoji: '💰', name: 'Rich', desc: '1000 coins' },
+            { id: 'wealthy', emoji: '💎', name: 'Wealthy', desc: '5000 coins' },
+            { id: 'pet_owner', emoji: '🐾', name: 'Pet Owner', desc: 'Own a pet' },
+            { id: 'geared', emoji: '🎽', name: 'Geared Up', desc: 'Equip item' },
+            { id: 'skilled', emoji: '🌳', name: 'Skilled', desc: 'Upgrade skill' },
+            { id: 'prestige1', emoji: '✨', name: 'Prestige', desc: 'Prestige once' },
+            { id: 'survivor', emoji: '🛡️', name: 'Survivor', desc: '5 min alive' },
+            { id: 'untouchable', emoji: '🏆', name: 'Untouchable', desc: 'Wave no damage' },
+            { id: 'arsenal', emoji: '⚔️', name: 'Arsenal', desc: 'All weapons' },
+            { id: 'level10', emoji: '📈', name: 'Level 10', desc: 'Reach LV10' },
+            { id: 'level20', emoji: '📊', name: 'Level 20', desc: 'Reach LV20' }
+        ];
+        let unlockedAchievements = JSON.parse(localStorage.getItem('ai_roasters_achievements_v2') || '[]');
+        
+        function showAchieveGallery() {
+            const grid = document.getElementById('achieve-grid');
+            grid.innerHTML = '';
+            
+            allAchievements.forEach(a => {
+                const unlocked = unlockedAchievements.includes(a.id);
+                const div = document.createElement('div');
+                div.className = 'achieve-item' + (unlocked ? ' unlocked' : '');
+                div.innerHTML = a.emoji + '<span>' + a.name + '</span>';
+                div.title = a.desc;
+                grid.appendChild(div);
+            });
+            
+            document.getElementById('achieve-count').textContent = unlockedAchievements.length + '/20 Unlocked';
+            document.getElementById('achieve-gallery').classList.add('visible');
+        }
+        
+        function unlockAchievement(id) {
+            if (unlockedAchievements.includes(id)) return;
+            unlockedAchievements.push(id);
+            localStorage.setItem('ai_roasters_achievements_v2', JSON.stringify(unlockedAchievements));
+            
+            const a = allAchievements.find(x => x.id === id);
+            if (a) {
+                totalCoins += 50;
+                saveTotalCoins();
+                notify('🏆 ' + a.emoji + ' ' + a.name + '! +50 coins!');
+                playSound(660, 0.3, 'sine');
+            }
+        }
+        
+        function checkAchievements() {
+            if (stats.kills >= 1) unlockAchievement('first_blood');
+            if (stats.kills >= 100) unlockAchievement('centurion');
+            if (stats.kills >= 500) unlockAchievement('mass_murder');
+            if (player.score >= 5000) unlockAchievement('high_score');
+            if (player.score >= 10000) unlockAchievement('score_master');
+            if (player.combo >= 10) unlockAchievement('combo_king');
+            if (player.combo >= 25) unlockAchievement('combo_god');
+            if (wave >= 10) unlockAchievement('wave_rider');
+            if (stats.bossKills >= 5) unlockAchievement('boss_slayer');
+            if (totalCoins >= 1000) unlockAchievement('rich');
+            if (totalCoins >= 5000) unlockAchievement('wealthy');
+            if (ownedPets.length > 0) unlockAchievement('pet_owner');
+            if (Object.keys(equippedItems).length > 0) unlockAchievement('geared');
+            if (Object.values(skillLevels).some(v => v > 0)) unlockAchievement('skilled');
+            if (prestigeLevel >= 1) unlockAchievement('prestige1');
+            if (playerLevel >= 10) unlockAchievement('level10');
+            if (playerLevel >= 20) unlockAchievement('level20');
+        }
+        
+        function closeAchieveGallery() { document.getElementById('achieve-gallery').classList.remove('visible'); }
         
         // Quest system
         const quests = [
@@ -2609,6 +2704,8 @@
             updateHUD();
             updatePet();
             updateArenaModifier();
+            frameCount++;
+            if (frameCount % 60 === 0) checkAchievements();
             requestAnimationFrame(gameLoop);
         }
         
