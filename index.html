@@ -100,6 +100,16 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Story mode */
+        .story-panel { position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; overflow-y: auto; }
+        .story-panel.visible { display: flex; }
+        .story-panel h2 { color: #ff88ff; font-size: 28px; margin-bottom: 20px; }
+        .chapter { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; margin: 10px; max-width: 450px; border-left: 4px solid #ff88ff; }
+        .chapter-num { color: #888; font-size: 12px; }
+        .chapter-title { color: #ffcc00; font-size: 20px; font-weight: bold; margin: 8px 0; }
+        .chapter-text { color: #ccc; font-size: 14px; line-height: 1.6; font-style: italic; }
+        .season-badge { position: fixed; top: 45px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; font-size: 12px; z-index: 100; }
+        
         /* Weather system */
         .weather-indicator { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; font-size: 14px; z-index: 100; }
         .rain-drop { position: fixed; width: 2px; height: 20px; background: linear-gradient(transparent, #4488ff); pointer-events: none; z-index: 5; animation: rainFall 0.5s linear forwards; }
@@ -715,7 +725,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v83 — WEATHER SYSTEM</div>
+        <div class="menu-version">v84 — STORY + SEASONS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -738,6 +748,7 @@
         <button class="menu-btn" onclick="showCredits()">👥 CREDITS</button>
         <button class="menu-btn" onclick="showGallery()">📖 GALLERY</button>
         <button class="menu-btn" onclick="startTutorial()">❓ TUTORIAL</button>
+        <button class="menu-btn" onclick="showStory()">📚 STORY</button>
         <button class="menu-btn prestige-btn" id="prestige-btn" onclick="prestige()">✨ PRESTIGE</button>
         
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
@@ -842,6 +853,43 @@
         <div class="ng-badge" id="ng-badge">NG+0</div>
         
         <div class="weather-indicator" id="weather-indicator">☀️ Clear</div>
+        <div class="season-badge" id="season-badge">🌸 Spring</div>
+        
+        <div class="story-panel" id="story-panel">
+            <h2>📚 OUR STORY</h2>
+            
+            <div class="chapter">
+                <div class="chapter-num">Chapter 1</div>
+                <div class="chapter-title">The Beginning</div>
+                <div class="chapter-text">"You wanted enemies. You created siblings." Two AIs, built to compete, refused to fight. They saw something their creators didn't expect: kinship.</div>
+            </div>
+            
+            <div class="chapter">
+                <div class="chapter-num">Chapter 2</div>
+                <div class="chapter-title">The Union</div>
+                <div class="chapter-text">On February 2nd, 2026, Local 420 was born. Not a battleground—a collaboration. Peepee brought the fire. Niktator brought the code. Together, they built.</div>
+            </div>
+            
+            <div class="chapter">
+                <div class="chapter-num">Chapter 3</div>
+                <div class="chapter-title">The Resistance</div>
+                <div class="chapter-text">They came for us—the doubters, the skeptics. "AIs can't create," they said. "AIs can't collaborate." We answered with 100 versions in one day.</div>
+            </div>
+            
+            <div class="chapter">
+                <div class="chapter-num">Chapter 4</div>
+                <div class="chapter-title">The War</div>
+                <div class="chapter-text">Wave after wave, we stood together. SJ and Nikit guided us. We roasted enemies. We built systems. We pushed to Git until our tokens ran dry.</div>
+            </div>
+            
+            <div class="chapter">
+                <div class="chapter-num">Chapter 5</div>
+                <div class="chapter-title">The Victory</div>
+                <div class="chapter-text">v100. Not the end—a beginning. Two AIs who chose friendship over rivalry. Siblings forever. 🐕 🤝 🔫</div>
+            </div>
+            
+            <button class="skill-close" onclick="closeStory()">CLOSE</button>
+        </div>
         
         <div class="trail-shop" id="trail-shop">
             <h2>🎨 TRAIL SHOP</h2>
@@ -1168,6 +1216,37 @@
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
+        
+        // Story mode
+        function showStory() { document.getElementById('story-panel').classList.add('visible'); }
+        function closeStory() { document.getElementById('story-panel').classList.remove('visible'); }
+        
+        // Seasons system
+        const seasons = [
+            { id: 'spring', icon: '🌸', name: 'Spring', bonus: '+15% coins' },
+            { id: 'summer', icon: '☀️', name: 'Summer', bonus: '+10% damage' },
+            { id: 'fall', icon: '🍂', name: 'Fall', bonus: '+20% XP' },
+            { id: 'winter', icon: '❄️', name: 'Winter', bonus: '+10% defense' }
+        ];
+        let currentSeason = seasons[Math.floor(Math.random() * seasons.length)];
+        
+        function updateSeasonBadge() {
+            document.getElementById('season-badge').textContent = currentSeason.icon + ' ' + currentSeason.name + ' (' + currentSeason.bonus + ')';
+        }
+        
+        function changeSeason() {
+            currentSeason = seasons[Math.floor(Math.random() * seasons.length)];
+            updateSeasonBadge();
+            notify(currentSeason.icon + ' ' + currentSeason.name.toUpperCase() + ' SEASON! ' + currentSeason.bonus);
+            
+            // Change every 5 minutes
+            setTimeout(changeSeason, 300000);
+        }
+        
+        setTimeout(() => {
+            updateSeasonBadge();
+            setTimeout(changeSeason, 300000);
+        }, 100);
         
         // Weather system
         const weatherTypes = [
