@@ -470,7 +470,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v60 — 60% MILESTONE 🎉</div>
+        <div class="menu-version">v61 — WEEKLY REWARDS + JACKPOT</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -691,6 +691,40 @@
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
         
+        // Weekly rewards system
+        function checkWeeklyReward() {
+            const now = new Date();
+            const weekNum = Math.floor(now.getTime() / (7 * 24 * 60 * 60 * 1000));
+            const lastWeek = parseInt(localStorage.getItem('ai_roasters_last_week') || '0');
+            const weeklyBest = parseInt(localStorage.getItem('ai_roasters_weekly_best') || '0');
+            
+            if (lastWeek !== weekNum && weeklyBest > 0) {
+                let reward = 0;
+                if (weeklyBest >= 5000) reward = 500;
+                else if (weeklyBest >= 2000) reward = 200;
+                else if (weeklyBest >= 500) reward = 50;
+                
+                if (reward > 0) {
+                    totalCoins += reward;
+                    saveTotalCoins();
+                    notify('📅 WEEKLY REWARD! Best: ' + weeklyBest + ' → +' + reward + ' coins!');
+                }
+                
+                localStorage.setItem('ai_roasters_weekly_best', '0');
+                localStorage.setItem('ai_roasters_last_week', weekNum);
+            }
+        }
+        
+        function updateWeeklyBest(score) {
+            const best = parseInt(localStorage.getItem('ai_roasters_weekly_best') || '0');
+            if (score > best) {
+                localStorage.setItem('ai_roasters_weekly_best', score);
+            }
+        }
+        
+        // Check weekly on load
+        setTimeout(checkWeeklyReward, 700);
+        
         // Boss loot table
         const bossLoot = [
             { name: 'RARE COIN', icon: '💎', chance: 0.30, effect: () => { totalCoins += 100; saveTotalCoins(); notify('💎 +100 RARE COINS!'); } },
@@ -708,7 +742,8 @@
                 }
             }},
             { name: 'XP BOOST', icon: '✨', chance: 0.25, effect: () => { addXp(50); notify('✨ +50 XP BOOST!'); } },
-            { name: 'MAX HP', icon: '❤️', chance: 0.15, effect: () => { player.maxHealth += 10; player.health += 10; notify('❤️ +10 MAX HP!'); } }
+            { name: 'MAX HP', icon: '❤️', chance: 0.15, effect: () => { player.maxHealth += 10; player.health += 10; notify('❤️ +10 MAX HP!'); } },
+            { name: 'JACKPOT', icon: '💰', chance: 0.05, effect: () => { totalCoins += 250; saveTotalCoins(); notify('💰💰💰 JACKPOT! +250 COINS! 💰💰💰'); screenShake(); } }
         ];
         
         function dropBossLoot() {
@@ -2045,6 +2080,7 @@
             
             // Death
             if (player.health <= 0) {
+                updateWeeklyBest(player.score); // Track weekly best
                 player.health = player.maxHealth;
                 player.x = window.innerWidth / 2;
                 player.y = window.innerHeight / 2;
