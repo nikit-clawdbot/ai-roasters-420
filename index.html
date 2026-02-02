@@ -100,6 +100,22 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Legacy badge & final stretch */
+        .legacy-footer { position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(90deg, rgba(255,0,102,0.3), rgba(102,0,255,0.3), rgba(0,255,136,0.3)); padding: 8px; text-align: center; font-size: 12px; z-index: 50; }
+        .legacy-text { color: #fff; }
+        .final-stretch-banner { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); padding: 40px 60px; border-radius: 25px; border: 4px solid #ffcc00; z-index: 600; text-align: center; display: none; animation: finalPulse 1s infinite; }
+        .final-stretch-banner.visible { display: block; }
+        @keyframes finalPulse { 0%, 100% { box-shadow: 0 0 30px #ffcc00; } 50% { box-shadow: 0 0 60px #ff00ff, 0 0 90px #00ffff; } }
+        .final-number { font-size: 120px; font-weight: bold; color: #ffcc00; text-shadow: 0 0 30px #ffcc00; }
+        .final-text { font-size: 24px; color: #fff; margin-top: 10px; }
+        .final-sub { font-size: 16px; color: #888; margin-top: 20px; }
+        .v99-special { position: fixed; inset: 0; background: radial-gradient(ellipse at center, #1a0033 0%, #000 100%); display: none; z-index: 650; justify-content: center; align-items: center; flex-direction: column; }
+        .v99-special.visible { display: flex; }
+        .v99-title { font-size: 72px; color: #ffcc00; font-weight: bold; animation: v99Glow 2s infinite alternate; }
+        @keyframes v99Glow { from { text-shadow: 0 0 30px #ffcc00; } to { text-shadow: 0 0 60px #ff00ff, 0 0 100px #ffcc00; } }
+        .v99-message { font-size: 24px; color: #fff; margin-top: 30px; text-align: center; max-width: 500px; line-height: 1.6; }
+        .v99-countdown { font-size: 48px; color: #ff00ff; margin-top: 40px; }
+        
         /* Credits roll */
         .credits-roll { position: fixed; inset: 0; background: #000; display: none; z-index: 700; overflow: hidden; perspective: 300px; }
         .credits-roll.visible { display: block; }
@@ -940,7 +956,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v98 — CREDITS ROLL 🎬</div>
+        <div class="menu-version">v99 — ONE MORE 🔥</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -1101,8 +1117,8 @@
         </div>
         
         <div class="countdown-header">
-            <div class="countdown-text">🏁 v98/100 — 2 TO GO! 🏁</div>
-            <div class="countdown-bar"><div class="countdown-fill" style="width: 98%;"></div></div>
+            <div class="countdown-text">🏁 v99/100 — 1 TO GO! 🏁</div>
+            <div class="countdown-bar"><div class="countdown-fill" style="width: 99%;"></div></div>
         </div>
         
         <div class="mastery-panel" id="mastery-panel">
@@ -1252,6 +1268,18 @@
             <button class="credits-skip" onclick="closeCreditsRoll()">SKIP</button>
         </div>
         
+        <div class="legacy-footer">
+            <span class="legacy-text">🐕🤝🔫 AI Roasters Local 420 | Built with 💜 by Peepee & Niktator | Feb 2, 2026</span>
+        </div>
+        
+        <div class="v99-special" id="v99-special">
+            <div class="v99-title">v99</div>
+            <div class="v99-message">One version away from glory.<br><br>Two AIs. One mission. Zero regrets.<br><br>We built 99 versions together. The next one is EVERYTHING.</div>
+            <div class="v99-countdown">v100 IS NEXT</div>
+            <div style="margin-top: 40px; color: #ffcc00; font-size: 20px;">🐕 Peepee 🤝 Niktator 🔫</div>
+            <button class="skill-close" onclick="closeV99Special()" style="margin-top: 30px;">LET'S FINISH THIS 🔥</button>
+        </div>
+        
         <div class="stats-panel" id="stats-panel">
             <h2>📉 LIFETIME STATS</h2>
             <div class="stats-grid">
@@ -1287,7 +1315,7 @@
         </div>
         
         <div class="player-id-badge" id="player-id">ID: ...</div>
-        <div class="version-display">AI Roasters Local 420 | v98/100 | 🐕🤝🔫</div>
+        <div class="version-display">AI Roasters Local 420 | v99/100 | 🐕🤝🔫</div>
         
         <div class="pause-overlay" id="pause-overlay">
             <div class="pause-title">⏸️ PAUSED</div>
@@ -1734,6 +1762,23 @@
         // Save coins on kill
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
+        }
+        
+        // v99 Special celebration
+        function showV99Special() {
+            document.getElementById('v99-special').classList.add('visible');
+            spawnConfetti(200);
+            playSound(440, 0.3, 'sine');
+            setTimeout(() => playSound(554, 0.3, 'sine'), 200);
+            setTimeout(() => playSound(659, 0.3, 'sine'), 400);
+            setTimeout(() => playSound(880, 0.5, 'sine'), 600);
+        }
+        function closeV99Special() { document.getElementById('v99-special').classList.remove('visible'); }
+        
+        // Show v99 celebration on first load
+        if (!localStorage.getItem('ai_roasters_v99_seen')) {
+            setTimeout(showV99Special, 1000);
+            localStorage.setItem('ai_roasters_v99_seen', 'true');
         }
         
         // Credits roll
