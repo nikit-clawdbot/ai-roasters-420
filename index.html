@@ -100,6 +100,17 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Ascension system */
+        .ascension-badge { position: fixed; top: 10px; right: 10px; background: linear-gradient(135deg, #ffcc00, #ff6600); padding: 5px 12px; border-radius: 15px; font-size: 12px; font-weight: bold; color: #000; z-index: 100; display: none; }
+        .ascension-badge.visible { display: block; animation: ascensionGlow 2s infinite; }
+        @keyframes ascensionGlow { 0%, 100% { box-shadow: 0 0 10px #ffcc00; } 50% { box-shadow: 0 0 25px #ff6600, 0 0 40px #ffcc00; } }
+        .playtime-milestone { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); padding: 30px 50px; border-radius: 20px; border: 3px solid #ffcc00; z-index: 500; text-align: center; display: none; }
+        .playtime-milestone.visible { display: block; animation: milestonePopIn 0.5s; }
+        @keyframes milestonePopIn { 0% { transform: translate(-50%, -50%) scale(0); } 100% { transform: translate(-50%, -50%) scale(1); } }
+        .playtime-icon { font-size: 48px; }
+        .playtime-text { font-size: 24px; color: #ffcc00; margin-top: 15px; font-weight: bold; }
+        .playtime-sub { font-size: 14px; color: #888; margin-top: 10px; }
+        
         /* Enemy variants & wave modifiers */
         .variant-badge { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 10px; padding: 2px 6px; border-radius: 10px; white-space: nowrap; }
         .variant-elite { background: #4488ff; color: #fff; }
@@ -834,7 +845,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v92 — VARIANTS + WAVE MODS</div>
+        <div class="menu-version">v93 — ASCENSION</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -983,6 +994,14 @@
         
         <div class="wave-modifier" id="wave-modifier">🌊 NORMAL WAVE</div>
         
+        <div class="ascension-badge" id="ascension-badge">🌟 ASCENDED</div>
+        
+        <div class="playtime-milestone" id="playtime-milestone">
+            <div class="playtime-icon">⏱️</div>
+            <div class="playtime-text" id="playtime-text">1 MINUTE!</div>
+            <div class="playtime-sub">Keep playing!</div>
+        </div>
+        
         <div class="stats-panel" id="stats-panel">
             <h2>📉 LIFETIME STATS</h2>
             <div class="stats-grid">
@@ -1018,7 +1037,7 @@
         </div>
         
         <div class="player-id-badge" id="player-id">ID: ...</div>
-        <div class="version-display">AI Roasters Local 420 | v92/100 | 🐕🤝🔫</div>
+        <div class="version-display">AI Roasters Local 420 | v93/100 | 🐕🤝🔫</div>
         
         <div class="pause-overlay" id="pause-overlay">
             <div class="pause-title">⏸️ PAUSED</div>
@@ -1466,6 +1485,71 @@
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
+        
+        // Ascension system (beyond NG+)
+        let ascensionLevel = parseInt(localStorage.getItem('ai_roasters_ascension') || '0');
+        
+        function checkAscension() {
+            if (ngPlusLevel >= 10 && ascensionLevel === 0) {
+                ascend();
+            }
+        }
+        
+        function ascend() {
+            ascensionLevel++;
+            localStorage.setItem('ai_roasters_ascension', ascensionLevel);
+            document.getElementById('ascension-badge').classList.add('visible');
+            document.getElementById('ascension-badge').textContent = '🌟 ASCENDED x' + ascensionLevel;
+            notify('🌟 ASCENSION ACHIEVED! +5% ALL STATS!');
+            spawnConfetti(100);
+            playSound(1000, 0.5, 'sine');
+        }
+        
+        function getAscensionBonus() {
+            return 1 + (ascensionLevel * 0.05); // +5% per ascension
+        }
+        
+        // Show ascension badge if ascended
+        if (ascensionLevel > 0) {
+            document.getElementById('ascension-badge').classList.add('visible');
+            document.getElementById('ascension-badge').textContent = '🌟 ASCENDED x' + ascensionLevel;
+        }
+        
+        // Playtime tracking and milestones
+        let totalPlaytime = parseInt(localStorage.getItem('ai_roasters_playtime') || '0');
+        let sessionStart = Date.now();
+        const playtimeMilestones = [
+            { seconds: 60, text: '1 MINUTE!', shown: false },
+            { seconds: 3600, text: '1 HOUR!', shown: false },
+            { seconds: 18000, text: '5 HOURS!', shown: false },
+            { seconds: 36000, text: '10 HOURS!', shown: false }
+        ];
+        
+        function updatePlaytime() {
+            const sessionTime = Math.floor((Date.now() - sessionStart) / 1000);
+            const total = totalPlaytime + sessionTime;
+            
+            playtimeMilestones.forEach(m => {
+                const shownKey = 'ai_roasters_playtime_' + m.seconds;
+                if (total >= m.seconds && !localStorage.getItem(shownKey)) {
+                    localStorage.setItem(shownKey, 'true');
+                    showPlaytimeMilestone(m.text);
+                }
+            });
+        }
+        
+        function showPlaytimeMilestone(text) {
+            document.getElementById('playtime-text').textContent = text;
+            document.getElementById('playtime-milestone').classList.add('visible');
+            spawnConfetti(30);
+            setTimeout(() => document.getElementById('playtime-milestone').classList.remove('visible'), 3000);
+        }
+        
+        setInterval(updatePlaytime, 10000);
+        window.addEventListener('beforeunload', () => {
+            const sessionTime = Math.floor((Date.now() - sessionStart) / 1000);
+            localStorage.setItem('ai_roasters_playtime', totalPlaytime + sessionTime);
+        });
         
         // Enemy variants system
         const variants = [
