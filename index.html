@@ -100,6 +100,19 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Tutorial system */
+        .tutorial-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; z-index: 500; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
+        .tutorial-overlay.visible { display: flex; }
+        .tutorial-box { background: rgba(255,255,255,0.1); padding: 30px; border-radius: 20px; max-width: 400px; text-align: center; border: 2px solid #00ffff; }
+        .tutorial-step { font-size: 14px; color: #888; margin-bottom: 10px; }
+        .tutorial-icon { font-size: 64px; margin: 20px 0; }
+        .tutorial-title { font-size: 24px; font-weight: bold; color: #fff; margin-bottom: 15px; }
+        .tutorial-desc { font-size: 16px; color: #ccc; line-height: 1.6; }
+        .tutorial-nav { display: flex; gap: 15px; margin-top: 25px; justify-content: center; }
+        .tutorial-btn { padding: 12px 30px; border: none; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .tutorial-btn.next { background: #00ffff; color: #000; }
+        .tutorial-btn.skip { background: #444; color: #fff; }
+        
         /* Gallery screen */
         .gallery-panel { position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: none; z-index: 450; justify-content: center; align-items: flex-start; flex-direction: column; padding: 20px; overflow-y: auto; }
         .gallery-panel.visible { display: flex; }
@@ -692,7 +705,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v81 — GALLERY</div>
+        <div class="menu-version">v82 — TUTORIAL REWORK</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -714,6 +727,7 @@
         <button class="menu-btn" onclick="showSettings()">⚙️ SETTINGS</button>
         <button class="menu-btn" onclick="showCredits()">👥 CREDITS</button>
         <button class="menu-btn" onclick="showGallery()">📖 GALLERY</button>
+        <button class="menu-btn" onclick="startTutorial()">❓ TUTORIAL</button>
         <button class="menu-btn prestige-btn" id="prestige-btn" onclick="prestige()">✨ PRESTIGE</button>
         
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
@@ -934,6 +948,19 @@
             
             <button class="skill-close" onclick="closeGallery()">CLOSE</button>
         </div>
+        
+        <div class="tutorial-overlay" id="tutorial-overlay">
+            <div class="tutorial-box">
+                <div class="tutorial-step" id="tutorial-step">Step 1/9</div>
+                <div class="tutorial-icon" id="tutorial-icon">🎮</div>
+                <div class="tutorial-title" id="tutorial-title">Welcome!</div>
+                <div class="tutorial-desc" id="tutorial-desc">Let's learn how to play AI ROASTERS!</div>
+                <div class="tutorial-nav">
+                    <button class="tutorial-btn skip" onclick="endTutorial()">SKIP</button>
+                    <button class="tutorial-btn next" onclick="nextTutorial()">NEXT</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1129,6 +1156,55 @@
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
+        
+        // Tutorial system
+        const tutorialSteps = [
+            { icon: '🎮', title: 'Welcome!', desc: 'Let\'s learn how to play AI ROASTERS!' },
+            { icon: '👆', title: 'Movement', desc: 'TAP anywhere to move your player. You\'ll auto-shoot at nearby enemies!' },
+            { icon: '🔫', title: 'Combat', desc: 'Get close to enemies to attack. Build COMBOS by hitting enemies in quick succession!' },
+            { icon: '💰', title: 'Coins', desc: 'Collect COINS from defeated enemies. Spend them in the SHOP!' },
+            { icon: '⬆️', title: 'Upgrades', desc: 'Buy WEAPONS, SKINS, PETS and more to become stronger!' },
+            { icon: '🌊', title: 'Waves', desc: 'Survive WAVES of enemies. Each wave gets harder!' },
+            { icon: '👹', title: 'Bosses', desc: 'Every 5 waves, face a BOSS. At wave 20, fight THE KING!' },
+            { icon: '✨', title: 'Prestige', desc: 'Reset progress for PERMANENT bonuses. The more you prestige, the stronger you start!' },
+            { icon: '🏆', title: 'Ready!', desc: 'Earn ACHIEVEMENTS, climb the LEADERBOARD, and have fun! Good luck!' }
+        ];
+        let tutorialIndex = 0;
+        let tutorialSeen = localStorage.getItem('ai_roasters_tutorial_seen') === 'true';
+        
+        function startTutorial() {
+            tutorialIndex = 0;
+            updateTutorialUI();
+            document.getElementById('tutorial-overlay').classList.add('visible');
+        }
+        
+        function updateTutorialUI() {
+            const step = tutorialSteps[tutorialIndex];
+            document.getElementById('tutorial-step').textContent = 'Step ' + (tutorialIndex + 1) + '/' + tutorialSteps.length;
+            document.getElementById('tutorial-icon').textContent = step.icon;
+            document.getElementById('tutorial-title').textContent = step.title;
+            document.getElementById('tutorial-desc').textContent = step.desc;
+        }
+        
+        function nextTutorial() {
+            tutorialIndex++;
+            if (tutorialIndex >= tutorialSteps.length) {
+                endTutorial();
+            } else {
+                updateTutorialUI();
+            }
+        }
+        
+        function endTutorial() {
+            document.getElementById('tutorial-overlay').classList.remove('visible');
+            localStorage.setItem('ai_roasters_tutorial_seen', 'true');
+            tutorialSeen = true;
+        }
+        
+        // Auto-show tutorial for new players
+        setTimeout(() => {
+            if (!tutorialSeen) startTutorial();
+        }, 500);
         
         // Gallery screen
         function showGallery() { document.getElementById('gallery-panel').classList.add('visible'); }
