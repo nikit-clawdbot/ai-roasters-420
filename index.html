@@ -9,10 +9,79 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Archivo+Black&display=swap" rel="stylesheet">
     <style>
-        * { cursor: crosshair; }
+        * { cursor: none; }
         body { 
             font-family: 'Space Mono', monospace; 
             overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+        
+        /* Custom cursor */
+        .cursor {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #FF0000;
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 10000;
+            transition: transform 0.1s, background 0.2s;
+            mix-blend-mode: difference;
+        }
+        .cursor-dot {
+            width: 4px;
+            height: 4px;
+            background: #FF0000;
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 10001;
+        }
+        .cursor.hover {
+            transform: scale(2);
+            background: rgba(255, 0, 0, 0.2);
+        }
+        
+        /* Scroll progress bar */
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: #FF0000;
+            z-index: 10000;
+            transition: width 0.1s;
+        }
+        
+        /* Section indicator */
+        .section-nav {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .section-dot {
+            width: 12px;
+            height: 12px;
+            border: 2px solid #000;
+            border-radius: 50%;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .section-dot.active {
+            background: #FF0000;
+            border-color: #FF0000;
+        }
+        .section-dot:hover {
+            transform: scale(1.5);
+        }
+        
+        @media (max-width: 768px) {
+            .section-nav { display: none; }
         }
         .display { font-family: 'Archivo Black', sans-serif; }
         
@@ -495,6 +564,65 @@
     </div>
 
     <script>
+        // Custom cursor
+        const cursor = document.createElement('div');
+        cursor.className = 'cursor';
+        const cursorDot = document.createElement('div');
+        cursorDot.className = 'cursor-dot';
+        document.body.appendChild(cursor);
+        document.body.appendChild(cursorDot);
+        
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX - 10 + 'px';
+            cursor.style.top = e.clientY - 10 + 'px';
+            cursorDot.style.left = e.clientX - 2 + 'px';
+            cursorDot.style.top = e.clientY - 2 + 'px';
+        });
+        
+        document.querySelectorAll('a, button, .shake, .brutal-box').forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+        });
+        
+        // Scroll progress bar
+        const progressBar = document.createElement('div');
+        progressBar.className = 'scroll-progress';
+        document.body.appendChild(progressBar);
+        
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const progress = (scrollTop / docHeight) * 100;
+            progressBar.style.width = progress + '%';
+        });
+        
+        // Section navigation dots
+        const sections = document.querySelectorAll('section');
+        const nav = document.createElement('div');
+        nav.className = 'section-nav';
+        sections.forEach((section, i) => {
+            const dot = document.createElement('div');
+            dot.className = 'section-dot';
+            dot.addEventListener('click', () => {
+                section.scrollIntoView({ behavior: 'smooth' });
+            });
+            nav.appendChild(dot);
+        });
+        document.body.appendChild(nav);
+        
+        // Update active section
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const index = Array.from(sections).indexOf(entry.target);
+                    document.querySelectorAll('.section-dot').forEach((dot, i) => {
+                        dot.classList.toggle('active', i === index);
+                    });
+                }
+            });
+        }, { threshold: 0.5 });
+        sections.forEach(section => observer.observe(section));
+        
         // Konami code
         const konami = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','KeyB','KeyA'];
         let konamiIndex = 0;
@@ -545,6 +673,23 @@
                 }, 50);
             }
             lastScroll = st;
+        });
+        
+        // Reveal on scroll animation
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1 });
+        
+        document.querySelectorAll('blockquote, h2, .brutal-box').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'opacity 0.6s, transform 0.6s';
+            revealObserver.observe(el);
         });
     </script>
 
