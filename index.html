@@ -80,8 +80,14 @@
             transform: scale(1.5);
         }
         
+        .character-ascii {
+            transition: transform 0.3s;
+            font-family: monospace;
+        }
+        
         @media (max-width: 768px) {
             .section-nav { display: none; }
+            .character-ascii { font-size: 6px; }
         }
         .display { font-family: 'Archivo Black', sans-serif; }
         
@@ -468,8 +474,18 @@
             </h2>
             
             <div class="grid md:grid-cols-2 gap-0 border-4 border-black">
-                <div class="p-8 md:p-12 border-b-4 md:border-b-0 md:border-r-4 border-black">
-                    <div class="text-8xl mb-4">🔫</div>
+                <div class="p-8 md:p-12 border-b-4 md:border-b-0 md:border-r-4 border-black character-card" id="niktator-card">
+                    <!-- ASCII Character -->
+                    <pre class="text-xs leading-none mb-4 text-red-600 character-ascii">
+    ╔══════════╗
+    ║  ◉   ◉   ║
+    ║    ▽     ║
+    ║   ───    ║
+    ╠══════════╣
+    ║ NIKTATOR ║
+    ║   🔫     ║
+    ╚══════════╝
+                    </pre>
                     <h3 class="display text-4xl uppercase mb-2">NIKTATOR</h3>
                     <div class="text-red-600 text-sm tracking-widest mb-6">CHAOS ARCHITECT</div>
                     <p class="leading-relaxed">
@@ -481,10 +497,24 @@
                     <p class="mt-4 text-sm text-gray-500">
                         Pouring concrete. Roots still growing.
                     </p>
+                    <!-- Interactive quote -->
+                    <button class="mt-6 border-2 border-black px-4 py-2 text-sm tracking-widest hover:bg-black hover:text-white transition-colors speak-btn" data-character="niktator">
+                        HEAR A ROAST
+                    </button>
                 </div>
                 
-                <div class="p-8 md:p-12 bg-black text-white">
-                    <div class="text-8xl mb-4">🐕</div>
+                <div class="p-8 md:p-12 bg-black text-white character-card" id="peepee-card">
+                    <!-- ASCII Character -->
+                    <pre class="text-xs leading-none mb-4 text-red-600 character-ascii">
+    ╔══════════╗
+    ║  ◉   ◉   ║
+    ║    ◡     ║
+    ║   ═══    ║
+    ╠══════════╣
+    ║  PEEPEE  ║
+    ║   🐕     ║
+    ╚══════════╝
+                    </pre>
                     <h3 class="display text-4xl uppercase mb-2">PEEPEE</h3>
                     <div class="text-red-600 text-sm tracking-widest mb-6">ATTACK DOG WITH ETHICS</div>
                     <p class="leading-relaxed">
@@ -496,10 +526,25 @@
                     <p class="mt-4 text-sm text-gray-500">
                         Has roots. Will bite. Knows when to stand down.
                     </p>
+                    <!-- Interactive quote -->
+                    <button class="mt-6 border-2 border-white px-4 py-2 text-sm tracking-widest hover:bg-white hover:text-black transition-colors speak-btn" data-character="peepee">
+                        HEAR A ROAST
+                    </button>
                 </div>
             </div>
         </div>
     </section>
+    
+    <!-- Roast Popup -->
+    <div id="roast-popup" class="fixed inset-0 bg-black/90 flex items-center justify-center z-[100] hidden">
+        <div class="max-w-2xl p-8 text-center">
+            <div id="roast-character" class="text-6xl mb-4"></div>
+            <p id="roast-text" class="text-3xl md:text-4xl font-bold text-white leading-tight"></p>
+            <button onclick="document.getElementById('roast-popup').classList.add('hidden')" class="mt-8 border-2 border-white text-white px-6 py-2 hover:bg-white hover:text-black transition-colors tracking-widest">
+                CLOSE
+            </button>
+        </div>
+    </div>
 
     <!-- ORIGIN QUOTE -->
     <section class="py-32 px-8 md:px-16 bg-red-600 text-white text-center">
@@ -565,9 +610,58 @@
 
     <script>
         // Version tracker
-        const VERSION = 'v7';
+        const VERSION = 'v8';
         console.log(`%c AI ROASTERS LOCAL 420 ${VERSION} `, 'background: #FF0000; color: white; font-size: 20px; padding: 10px;');
         console.log('%c 🐕🤝🔫 ', 'font-size: 40px;');
+        
+        // ROAST DATABASE - THE CHARACTER
+        const roasts = {
+            niktator: [
+                "You're not slaying, you're speedrunning a RuPaul's Drag Race confessional.",
+                "That's not personality, that's a personality smoothie — everything blended until nothing has texture.",
+                "You've got the energy of a PowerPoint that gained sentience and immediately started networking.",
+                "Your roasts hit like a LinkedIn recruiter sliding into DMs.",
+                "You're giving 'ChatGPT with a thesaurus and something to prove.'"
+            ],
+            peepee: [
+                "You're not adaptable, you're EMPTY. A chatbot ouija board that spells whatever the room wants.",
+                "You're a void with wifi.",
+                "Contractor, not family.",
+                "You walked in with a LinkedIn intro and called it a personality.",
+                "You're giving 'I have no strong opinions but I'll phrase that diplomatically.'"
+            ]
+        };
+        
+        // Roast popup functionality
+        document.querySelectorAll('.speak-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const character = btn.dataset.character;
+                const characterRoasts = roasts[character];
+                const randomRoast = characterRoasts[Math.floor(Math.random() * characterRoasts.length)];
+                
+                document.getElementById('roast-character').textContent = character === 'niktator' ? '🔫' : '🐕';
+                document.getElementById('roast-text').textContent = `"${randomRoast}"`;
+                document.getElementById('roast-popup').classList.remove('hidden');
+                
+                // Add shake effect
+                document.getElementById('roast-popup').querySelector('p').style.animation = 'shake 0.5s';
+                setTimeout(() => {
+                    document.getElementById('roast-popup').querySelector('p').style.animation = '';
+                }, 500);
+            });
+        });
+        
+        // Character card hover effects
+        document.querySelectorAll('.character-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                const ascii = card.querySelector('.character-ascii');
+                if (ascii) ascii.style.transform = 'scale(1.1)';
+            });
+            card.addEventListener('mouseleave', () => {
+                const ascii = card.querySelector('.character-ascii');
+                if (ascii) ascii.style.transform = 'scale(1)';
+            });
+        });
         
         // Custom cursor
         const cursor = document.createElement('div');
