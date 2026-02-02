@@ -405,7 +405,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v51 — SHOP + SKINS</div>
+        <div class="menu-version">v52 — BOSS ABILITIES</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -454,6 +454,13 @@
         };
         
         const bossNames = ['ROAST TITAN', 'DR. SYNTHESIS', 'VOID LORD', 'THE DELEGATE', 'ARCADE KING'];
+        const bossAbilities = [
+            { name: 'charge', desc: 'Charges at player' },
+            { name: 'summon', desc: 'Spawns minions' },
+            { name: 'laser', desc: 'Fires laser beam' },
+            { name: 'shield', desc: 'Temporary invincibility' },
+            { name: 'rage', desc: 'Speed + damage boost' }
+        ];
         
         // Player trail
         let lastTrailTime = 0;
@@ -875,13 +882,25 @@
             game.appendChild(el);
             
             const bossHp = 200 + wave * 50;
-            boss = { el, x: window.innerWidth / 2 - 40, y: 100, hp: bossHp, maxHp: bossHp, phase: 1 };
+            const abilityIndex = Math.floor(wave / 5) % bossAbilities.length;
+            boss = { 
+                el, 
+                x: window.innerWidth / 2 - 40, 
+                y: 100, 
+                hp: bossHp, 
+                maxHp: bossHp, 
+                phase: 1,
+                ability: bossAbilities[abilityIndex].name,
+                abilityTimer: 0,
+                isShielded: false,
+                isEnraged: false
+            };
             
             document.getElementById('boss-hud').classList.add('visible');
             document.getElementById('boss-name').textContent = bossNames[Math.floor(wave / 5) % bossNames.length];
             document.getElementById('boss-bar').style.width = '100%';
             
-            notify('👹 ' + document.getElementById('boss-name').textContent + '!');
+            notify('👹 ' + document.getElementById('boss-name').textContent + ' — ' + bossAbilities[abilityIndex].desc.toUpperCase() + '!');
             playSound(100, 0.5, 'sawtooth');
         }
         
@@ -1420,13 +1439,56 @@
                 const dy = player.y - boss.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 
-                boss.x += (dx / dist) * 1.2;
-                boss.y += (dy / dist) * 1.2;
+                // Boss abilities
+                boss.abilityTimer++;
+                if (boss.abilityTimer >= 180) { // Every 3 seconds
+                    boss.abilityTimer = 0;
+                    
+                    if (boss.ability === 'charge') {
+                        // Charge at player
+                        boss.x += dx * 0.3;
+                        boss.y += dy * 0.3;
+                        screenShake();
+                        playSound(150, 0.2, 'sawtooth');
+                    } else if (boss.ability === 'summon') {
+                        // Spawn 2 minions
+                        spawnEnemy();
+                        spawnEnemy();
+                        notify('👹 Summoned minions!');
+                    } else if (boss.ability === 'laser') {
+                        // Fire projectile at player
+                        const angle = Math.atan2(dy, dx);
+                        for (let i = -1; i <= 1; i++) {
+                            const p = document.createElement('div');
+                            p.className = 'projectile';
+                            p.style.left = boss.x + 40 + 'px';
+                            p.style.top = boss.y + 40 + 'px';
+                            game.appendChild(p);
+                            projectiles.push({ el: p, x: boss.x + 40, y: boss.y + 40, dx: Math.cos(angle + i * 0.3) * 8, dy: Math.sin(angle + i * 0.3) * 8, life: 120, damage: 20 });
+                        }
+                        playSound(200, 0.2, 'square');
+                    } else if (boss.ability === 'shield') {
+                        boss.isShielded = true;
+                        boss.el.style.boxShadow = '0 0 40px rgba(0,255,255,0.9)';
+                        setTimeout(() => { boss.isShielded = false; boss.el.style.boxShadow = ''; }, 2000);
+                        notify('👹 Shield activated!');
+                    } else if (boss.ability === 'rage') {
+                        boss.isEnraged = true;
+                        boss.el.style.filter = 'hue-rotate(60deg) brightness(1.5)';
+                        setTimeout(() => { boss.isEnraged = false; boss.el.style.filter = ''; }, 3000);
+                        notify('👹 ENRAGED!');
+                    }
+                }
+                
+                const bossSpeed = boss.isEnraged ? 2.5 : 1.2;
+                boss.x += (dx / dist) * bossSpeed;
+                boss.y += (dy / dist) * bossSpeed;
                 boss.el.style.left = boss.x + 'px';
                 boss.el.style.top = boss.y + 'px';
                 
+                const bossDamage = boss.isEnraged ? 0.6 : 0.3;
                 if (dist < 60 && !player.shield) {
-                    player.health -= 0.3;
+                    player.health -= bossDamage;
                 }
             }
             
