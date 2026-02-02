@@ -93,6 +93,23 @@
         .damage-num { position: absolute; font-weight: bold; pointer-events: none; animation: damageFloat 0.8s forwards; z-index: 200; text-shadow: 2px 2px 0 #000; }
         .damage-num.normal { font-size: 16px; color: #fff; }
         .damage-num.crit { font-size: 24px; color: #ffcc00; }
+        /* Environment hazards */
+        .hazard { position: absolute; border-radius: 50%; pointer-events: none; animation: hazardPulse 1s infinite; }
+        .hazard.fire { background: radial-gradient(circle, rgba(255,100,0,0.8), rgba(255,0,0,0.4)); box-shadow: 0 0 30px rgba(255,100,0,0.6); }
+        .hazard.poison { background: radial-gradient(circle, rgba(0,255,100,0.8), rgba(0,200,0,0.4)); box-shadow: 0 0 30px rgba(0,255,100,0.6); }
+        .hazard.electric { background: radial-gradient(circle, rgba(100,200,255,0.8), rgba(0,100,255,0.4)); box-shadow: 0 0 30px rgba(100,200,255,0.6); }
+        @keyframes hazardPulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } }
+        
+        /* XP particles */
+        .xp-particle { position: absolute; font-size: 12px; font-weight: bold; color: #ffcc00; pointer-events: none; animation: xpFloat 1s forwards; }
+        @keyframes xpFloat { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-30px); } }
+        
+        /* Combo display */
+        .combo-big { position: fixed; bottom: 160px; right: 20px; font-size: 24px; font-weight: 900; color: #ffcc00; text-shadow: 0 0 20px rgba(255,204,0,0.5); pointer-events: none; transition: all 0.2s; }
+        .combo-big.x5 { color: #ff8800; font-size: 28px; }
+        .combo-big.x10 { color: #ff0000; font-size: 32px; }
+        .combo-big.x15 { color: #ff00ff; font-size: 36px; text-shadow: 0 0 30px rgba(255,0,255,0.7); }
+        
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-40px) scale(0.5); } }
         
         /* Kill streaks */
@@ -208,12 +225,13 @@
     <div id="notifications"></div>
     <div id="damage-flash"></div>
     <div id="union-strike"></div>
+    <div class="combo-big" id="combo-big"></div>
     <div id="wave-banner"><div class="wave-title" id="wave-title">WAVE 1</div><div class="wave-sub" id="wave-sub">Get ready!</div></div>
     
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v40 — DIFFICULTY MODES</div>
+        <div class="menu-version">v41 — HAZARDS + XP PARTICLES</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('boss')">👹 BOSS RUSH</button>
@@ -240,7 +258,7 @@
         };
         
         // Game state
-        let enemies = [], coins = [], powerups = [], projectiles = [];
+        let enemies = [], coins = [], powerups = [], projectiles = [], hazards = [];
         let boss = null;
         let wave = 1, enemiesKilledThisWave = 0, enemiesPerWave = 10;
         let joystickX = 0, joystickY = 0;
@@ -629,6 +647,7 @@
             e.el.classList.add('dead');
             player.score += e.score * (1 + Math.floor(player.combo / 5));
             player.xp += e.xp;
+            showXpParticle(e.x, e.y, e.xp);
             enemiesKilledThisWave++;
             stats.kills++;
             stats.killsWithoutDamage++;
@@ -705,6 +724,44 @@
             setTimeout(() => el.remove(), 800);
         }
         
+        function showXpParticle(x, y, xp) {
+            const el = document.createElement('div');
+            el.className = 'xp-particle';
+            el.textContent = '+' + xp + ' XP';
+            el.style.left = x + 'px';
+            el.style.top = (y + 20) + 'px';
+            document.getElementById('game').appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+        
+        function updateComboDisplay() {
+            const el = document.getElementById('combo-big');
+            if (player.combo > 1) {
+                el.textContent = player.combo + 'x COMBO';
+                el.className = 'combo-big' + (player.combo >= 15 ? ' x15' : player.combo >= 10 ? ' x10' : player.combo >= 5 ? ' x5' : '');
+            } else {
+                el.textContent = '';
+            }
+        }
+        
+        function spawnHazard() {
+            if (wave < 3) return;
+            const types = ['fire', 'poison', 'electric'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            const size = 60 + Math.random() * 40;
+            
+            const el = document.createElement('div');
+            el.className = 'hazard ' + type;
+            el.style.width = size + 'px';
+            el.style.height = size + 'px';
+            el.style.left = (Math.random() * (window.innerWidth - size)) + 'px';
+            el.style.top = (100 + Math.random() * (window.innerHeight - 300)) + 'px';
+            document.getElementById('game').appendChild(el);
+            
+            const hazard = { el, type, x: parseFloat(el.style.left), y: parseFloat(el.style.top), size, life: 600 };
+            hazards.push(hazard);
+        }
+        
         function notify(text) {
             const n = document.createElement('div');
             n.className = 'notif';
@@ -763,6 +820,30 @@
                 player.comboTimer -= 0.016;
                 if (player.comboTimer <= 0) player.combo = 0;
             }
+            updateComboDisplay();
+            
+            // Hazards
+            hazards.forEach((h, i) => {
+                h.life--;
+                if (h.life <= 0) {
+                    h.el.remove();
+                    hazards.splice(i, 1);
+                    return;
+                }
+                
+                // Check player collision
+                const dx = player.x - h.x - h.size/2;
+                const dy = player.y - h.y - h.size/2;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < h.size/2 + 20 && !player.shield) {
+                    if (h.type === 'fire') player.health -= 0.5;
+                    else if (h.type === 'poison') player.health -= 0.2;
+                    else if (h.type === 'electric') player.health -= 0.8;
+                }
+            });
+            
+            // Spawn hazards randomly
+            if (Math.random() < 0.002 && hazards.length < 3) spawnHazard();
             
             // Shield decay
             if (player.shieldTimer > 0) {
