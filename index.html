@@ -100,6 +100,16 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Title system */
+        .player-title { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.8); padding: 8px 15px; border-radius: 20px; font-size: 14px; z-index: 100; border: 2px solid #ffcc00; }
+        .title-noob { border-color: #888; color: #888; }
+        .title-rookie { border-color: #00cc44; color: #00cc44; }
+        .title-fighter { border-color: #0088ff; color: #0088ff; }
+        .title-warrior { border-color: #aa44ff; color: #aa44ff; }
+        .title-champion { border-color: #ffcc00; color: #ffcc00; }
+        .title-legend { border-color: #ff6600; color: #ff6600; }
+        .title-god { border-color: #ff0066; color: #ff0066; text-shadow: 0 0 10px #ff0066; }
+        
         /* Leaderboard */
         .leaderboard { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
         .leaderboard.visible { display: flex; }
@@ -554,7 +564,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v69 — LEADERBOARD (nice)</div>
+        <div class="menu-version">v70 — 70% MILESTONE 🎉</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -574,6 +584,8 @@
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
         
         <div class="arena-modifier" id="arena-modifier">🔥 BURNING ARENA</div>
+        
+        <div class="player-title title-noob" id="player-title">🐣 Noob</div>
         
         <div class="quest-panel" id="quest-panel">
             <div class="quest-title">📜 QUEST</div>
@@ -822,6 +834,56 @@
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
+        
+        // Title system
+        const titles = [
+            { score: 0, name: '🐣 Noob', className: 'title-noob' },
+            { score: 1000, name: '⭐ Rookie', className: 'title-rookie' },
+            { score: 5000, name: '⚔️ Fighter', className: 'title-fighter' },
+            { score: 15000, name: '🗡️ Warrior', className: 'title-warrior' },
+            { score: 30000, name: '🏆 Champion', className: 'title-champion' },
+            { score: 50000, name: '👑 Legend', className: 'title-legend' },
+            { score: 100000, name: '⚡ God', className: 'title-god' }
+        ];
+        let currentTitle = titles[0];
+        let bestScore = parseInt(localStorage.getItem('ai_roasters_best_score') || '0');
+        
+        function updateTitle() {
+            // Use best score for permanent title
+            const score = Math.max(bestScore, player.score);
+            let newTitle = titles[0];
+            
+            for (const t of titles) {
+                if (score >= t.score) newTitle = t;
+            }
+            
+            if (newTitle !== currentTitle) {
+                currentTitle = newTitle;
+                const el = document.getElementById('player-title');
+                el.textContent = currentTitle.name;
+                el.className = 'player-title ' + currentTitle.className;
+                
+                if (score > bestScore) {
+                    notify('👑 NEW TITLE: ' + currentTitle.name + '!');
+                    playSound(880, 0.3, 'sine');
+                }
+            }
+            
+            if (player.score > bestScore) {
+                bestScore = player.score;
+                localStorage.setItem('ai_roasters_best_score', bestScore);
+            }
+        }
+        
+        // Update title on load
+        setTimeout(() => {
+            const el = document.getElementById('player-title');
+            for (const t of titles) {
+                if (bestScore >= t.score) currentTitle = t;
+            }
+            el.textContent = currentTitle.name;
+            el.className = 'player-title ' + currentTitle.className;
+        }, 100);
         
         // Leaderboard system
         let leaderboard = JSON.parse(localStorage.getItem('ai_roasters_leaderboard') || '[]');
@@ -2762,6 +2824,7 @@
             updateHUD();
             updatePet();
             updateArenaModifier();
+            updateTitle();
             frameCount++;
             if (frameCount % 60 === 0) checkAchievements();
             requestAnimationFrame(gameLoop);
