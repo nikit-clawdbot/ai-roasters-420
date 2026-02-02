@@ -99,8 +99,17 @@
         .damage-num.crit { font-size: 32px; color: #ffff00; text-shadow: 0 0 15px #ffaa00, 2px 2px 0 #000; }
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
-        /* Floating damage numbers */
-        @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-50px) scale(0.5); } }
+        
+        /* Weapon specials */
+        .special-burst { position: absolute; width: 100px; height: 100px; border-radius: 50%; pointer-events: none; animation: burstAnim 0.5s forwards; z-index: 150; }
+        .special-burst.fists { background: radial-gradient(circle, rgba(255,100,100,0.8), transparent); }
+        .special-burst.sword { background: radial-gradient(circle, rgba(100,200,255,0.8), transparent); width: 150px; height: 150px; }
+        .special-burst.hammer { background: radial-gradient(circle, rgba(255,200,50,0.8), transparent); width: 200px; height: 200px; }
+        .special-burst.daggers { background: radial-gradient(circle, rgba(200,100,255,0.8), transparent); }
+        .special-burst.staff { background: radial-gradient(circle, rgba(100,255,200,0.8), transparent); width: 180px; height: 180px; }
+        @keyframes burstAnim { 0% { transform: scale(0); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+        .special-cooldown { position: fixed; bottom: 180px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 5px 15px; border-radius: 5px; font-size: 14px; color: #888; display: none; }
+        .special-cooldown.visible { display: block; }
         
         /* Shop system */
         .shop-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 400; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
@@ -337,12 +346,15 @@
             <div class="joystick-stick" id="stick"></div>
         </div>
         <div class="action-btns">
-            <button class="action-btn rage" id="btn-rage">😡</button>
-            <button class="action-btn weapon" id="btn-weapon">🔄</button>
-            <button class="action-btn dash" id="btn-dash">💨</button>
-            <button class="action-btn special" id="btn-special">⚡</button>
-            <button class="action-btn attack" id="btn-attack">🔥</button>
+            <button class="action-btn rage" id="btn-rage" onclick="activateRage()">😡</button>
+            <button class="action-btn weapon" id="btn-weapon" onclick="switchWeapon()">🔄</button>
+            <button class="action-btn dash" id="btn-dash" onclick="dash()">💨</button>
+            <button class="action-btn special" id="btn-special" onclick="unionStrike()">⚡</button>
+            <button class="action-btn" id="btn-weapon-special" onclick="weaponSpecial()">💫</button>
+            <button class="action-btn attack" id="btn-attack" onclick="attack()">🔥</button>
         </div>
+        
+        <div class="special-cooldown" id="special-cooldown">💫 5s</div>
         
         <div class="rage-bar"><div class="rage-bar-fill" id="rage-bar"></div></div>
         <div class="rage-overlay" id="rage-overlay"></div>
@@ -410,7 +422,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v53 — ENHANCED DAMAGE NUMBERS</div>
+        <div class="menu-version">v54 — WEAPON SPECIALS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -614,6 +626,51 @@
         // Save coins on kill
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
+        }
+        
+        // Weapon special attacks
+        let specialCooldown = 0;
+        const weaponSpecials = {
+            fists: { name: 'FLURRY', damage: 15, hits: 5 },
+            sword: { name: 'SPIN SLASH', damage: 40, aoe: 150 },
+            hammer: { name: 'GROUND POUND', damage: 60, aoe: 200, stun: true },
+            daggers: { name: 'BLADE STORM', damage: 25, projectiles: 8 },
+            staff: { name: 'ENERGY BURST', damage: 50, aoe: 180 }
+        };
+        
+        function weaponSpecial() {
+            if (specialCooldown > 0 || !playing) return;
+            
+            const weaponNames = ['fists', 'sword', 'hammer', 'daggers', 'staff'];
+            const currentWeaponName = weaponNames[currentWeapon];
+            const special = weaponSpecials[currentWeaponName];
+            
+            specialCooldown = 300; // 5 seconds
+            
+            // Visual burst
+            const burst = document.createElement('div');
+            burst.className = 'special-burst ' + currentWeaponName;
+            burst.style.left = player.x - 50 + 'px';
+            burst.style.top = player.y - 50 + 'px';
+            game.appendChild(burst);
+            setTimeout(() => burst.remove(), 500);
+            
+            // Damage enemies in range
+            const range = special.aoe || 100;
+            enemies.forEach(e => {
+                const dist = Math.sqrt(Math.pow(e.x - player.x, 2) + Math.pow(e.y - player.y, 2));
+                if (dist < range) {
+                    const totalDamage = special.hits ? special.damage * special.hits : special.damage;
+                    e.hp -= totalDamage;
+                    showDamageNumber(e.x, e.y, totalDamage, true);
+                    if (special.stun) e.stunned = 60;
+                    if (e.hp <= 0) killEnemy(e);
+                }
+            });
+            
+            notify('💫 ' + special.name + '!');
+            playSound(300, 0.3, 'sawtooth');
+            screenShake();
         }
         
         // Rage mode
@@ -1068,6 +1125,7 @@
             if (e.code === 'KeyQ') switchWeapon();
             if (e.code === 'KeyR') unionStrike();
             if (e.code === 'KeyF') activateRage();
+            if (e.code === 'KeyX') weaponSpecial();
         });
         document.addEventListener('keyup', e => keys[e.code] = false);
         
@@ -1379,6 +1437,15 @@
             }
             if (dashCooldown > 0) dashCooldown--;
             if (attackCooldown > 0) attackCooldown--;
+            if (specialCooldown > 0) {
+                specialCooldown--;
+                if (specialCooldown > 0) {
+                    document.getElementById('special-cooldown').classList.add('visible');
+                    document.getElementById('special-cooldown').textContent = '💫 ' + Math.ceil(specialCooldown / 60) + 's';
+                } else {
+                    document.getElementById('special-cooldown').classList.remove('visible');
+                }
+            }
             updateRage();
             
             player.x = Math.max(20, Math.min(window.innerWidth - 60, player.x));
