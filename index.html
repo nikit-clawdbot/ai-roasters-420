@@ -93,6 +93,18 @@
         .damage-num { position: absolute; font-weight: bold; pointer-events: none; animation: damageFloat 0.8s forwards; z-index: 200; text-shadow: 2px 2px 0 #000; }
         .damage-num.normal { font-size: 16px; color: #fff; }
         .damage-num.crit { font-size: 24px; color: #ffcc00; }
+        /* Player trail */
+        .player-trail { position: absolute; width: 10px; height: 10px; background: radial-gradient(circle, rgba(255,68,68,0.8), transparent); border-radius: 50%; pointer-events: none; animation: trailFade 0.5s forwards; }
+        @keyframes trailFade { 0% { opacity: 0.8; transform: scale(1); } 100% { opacity: 0; transform: scale(0); } }
+        
+        /* Boss death mega explosion */
+        .mega-particle { position: absolute; pointer-events: none; border-radius: 50%; animation: megaExplode 1s forwards; }
+        @keyframes megaExplode { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0) translateY(-100px); } }
+        
+        /* Kill flash */
+        .kill-flash { position: fixed; inset: 0; background: rgba(255,255,255,0.3); pointer-events: none; animation: killFlash 0.1s forwards; z-index: 200; }
+        @keyframes killFlash { 0% { opacity: 1; } 100% { opacity: 0; } }
+        
         /* Tutorial */
         .tutorial-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; z-index: 500; justify-content: center; align-items: center; flex-direction: column; }
         .tutorial-overlay.visible { display: flex; }
@@ -307,7 +319,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v44 — TUTORIAL + TIPS</div>
+        <div class="menu-version">v45 — PARTICLE MADNESS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('boss')">👹 BOSS RUSH</button>
@@ -349,6 +361,51 @@
         };
         
         const bossNames = ['ROAST TITAN', 'DR. SYNTHESIS', 'VOID LORD', 'THE DELEGATE', 'ARCADE KING'];
+        
+        // Player trail
+        let lastTrailTime = 0;
+        function spawnTrail(x, y) {
+            const now = Date.now();
+            if (now - lastTrailTime < 50) return;
+            lastTrailTime = now;
+            
+            const t = document.createElement('div');
+            t.className = 'player-trail';
+            t.style.left = (x + 15) + 'px';
+            t.style.top = (y + 15) + 'px';
+            document.getElementById('game').appendChild(t);
+            setTimeout(() => t.remove(), 500);
+        }
+        
+        // Boss mega death
+        function bossDeathExplosion(x, y) {
+            screenShake();
+            for (let wave = 0; wave < 3; wave++) {
+                setTimeout(() => {
+                    for (let i = 0; i < 20; i++) {
+                        const p = document.createElement('div');
+                        p.className = 'mega-particle';
+                        const size = 10 + Math.random() * 20;
+                        p.style.width = size + 'px';
+                        p.style.height = size + 'px';
+                        p.style.background = ['#ff0000', '#ff00ff', '#ffcc00', '#00ffff'][Math.floor(Math.random() * 4)];
+                        p.style.left = (x + Math.random() * 60 - 30) + 'px';
+                        p.style.top = (y + Math.random() * 60 - 30) + 'px';
+                        document.getElementById('game').appendChild(p);
+                        setTimeout(() => p.remove(), 1000);
+                    }
+                    playSound(100 + wave * 50, 0.3, 'sawtooth');
+                }, wave * 200);
+            }
+        }
+        
+        // Kill flash
+        function killFlash() {
+            const f = document.createElement('div');
+            f.className = 'kill-flash';
+            document.body.appendChild(f);
+            setTimeout(() => f.remove(), 100);
+        }
         
         // Tutorial system
         const tutorialSteps = [
@@ -724,8 +781,11 @@
                 boss.hp -= 200;
                 document.getElementById('boss-bar').style.width = (boss.hp / boss.maxHp * 100) + '%';
                 if (boss.hp <= 0) {
+                    bossDeathExplosion(boss.x, boss.y);
                     boss.el.remove();
                     player.score += 500 * wave;
+                    stats.bossKills++;
+                    notify('👹 BOSS DESTROYED!');
                     boss = null;
                     document.getElementById('boss-hud').classList.remove('visible');
                 }
@@ -829,6 +889,7 @@
                     playSound(80, 0.15, 'sawtooth');
                     
                     if (boss.hp <= 0) {
+                        bossDeathExplosion(boss.x, boss.y);
                         boss.el.remove();
                         player.score += 500 * wave;
                         player.xp += 100;
@@ -856,7 +917,8 @@
             player.score += e.score * (1 + Math.floor(player.combo / 5));
             player.xp += e.xp;
             showXpParticle(e.x, e.y, e.xp);
-            spawnParticles(e.x, e.y, '#ff00ff', 10);
+            spawnParticles(e.x, e.y, '#ff00ff', 12);
+            killFlash();
             enemiesKilledThisWave++;
             stats.kills++;
             stats.killsWithoutDamage++;
@@ -1004,6 +1066,11 @@
             
             player.x += mx * player.speed;
             player.y += my * player.speed;
+            
+            // Player trail when moving fast
+            if (Math.abs(mx) > 0.3 || Math.abs(my) > 0.3 || isDashing) {
+                spawnTrail(player.x, player.y);
+            }
             
             // Dash movement
             if (isDashing) {
