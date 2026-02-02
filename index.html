@@ -95,6 +95,27 @@
         .damage-num.crit { font-size: 24px; color: #ffcc00; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-40px) scale(0.5); } }
         
+        /* Kill streaks */
+        .streak-banner { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: clamp(30px, 8vw, 50px); font-weight: 900; pointer-events: none; z-index: 300; animation: streakIn 1s forwards; text-shadow: 0 0 30px currentColor; }
+        @keyframes streakIn { 0% { opacity: 0; transform: translate(-50%, -50%) scale(3); } 30% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
+        .streak-rampage { color: #ffcc00; }
+        .streak-unstoppable { color: #ff8800; }
+        .streak-godlike { color: #ff0000; }
+        .streak-legendary { color: #ff00ff; }
+        .streak-beyond { color: #00ffff; }
+        
+        /* Ultimate bar */
+        .hud-ultimate { background: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 8px; display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+        .ultimate-bar { width: 60px; height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; }
+        .ultimate-bar-fill { height: 100%; background: linear-gradient(90deg, #ff00ff, #00ffff); width: 0%; transition: width 0.3s; }
+        .ultimate-ready { animation: ultimatePulse 0.5s infinite; }
+        @keyframes ultimatePulse { 0%, 100% { box-shadow: 0 0 5px #ff00ff; } 50% { box-shadow: 0 0 20px #00ffff; } }
+        
+        /* Union Strike effect */
+        #union-strike { position: fixed; inset: 0; background: radial-gradient(circle, rgba(255,0,255,0.8) 0%, rgba(0,255,255,0.5) 50%, transparent 70%); pointer-events: none; opacity: 0; z-index: 250; }
+        #union-strike.active { animation: unionStrike 1s forwards; }
+        @keyframes unionStrike { 0% { opacity: 0; transform: scale(0); } 30% { opacity: 1; transform: scale(1.5); } 100% { opacity: 0; transform: scale(2); } }
+        
         #damage-flash { position: fixed; inset: 0; background: rgba(255,0,0,0.3); pointer-events: none; opacity: 0; z-index: 50; }
         #damage-flash.visible { opacity: 1; animation: flash 0.2s; }
         @keyframes flash { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
@@ -152,6 +173,10 @@
                 <span class="weapon-icon" id="weapon-icon">👊</span>
                 <span class="weapon-name" id="weapon-name">FISTS</span>
             </div>
+            <div class="hud-ultimate">
+                <span>💥</span>
+                <div class="ultimate-bar"><div class="ultimate-bar-fill" id="ultimate-bar"></div></div>
+            </div>
         </div>
         <div class="hud-right">
             <div class="hud-score">
@@ -182,12 +207,13 @@
     
     <div id="notifications"></div>
     <div id="damage-flash"></div>
+    <div id="union-strike"></div>
     <div id="wave-banner"><div class="wave-title" id="wave-title">WAVE 1</div><div class="wave-sub" id="wave-sub">Get ready!</div></div>
     
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v38 — ENEMY HP BARS</div>
+        <div class="menu-version">v39 — UNION STRIKE</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('boss')">👹 BOSS RUSH</button>
         <button class="menu-btn" onclick="startGame('endless')">∞ ENDLESS</button>
@@ -413,10 +439,81 @@
         document.getElementById('btn-weapon').addEventListener('touchstart', e => { e.preventDefault(); switchWeapon(); });
         
         const keys = {};
+        // Ultimate + Killstreaks
+        let ultimateCharge = 0;
+        let killStreak = 0;
+        let lastKillTime = 0;
+        
+        const streakTiers = [
+            { kills: 5, name: 'RAMPAGE', class: 'rampage', bonus: 50 },
+            { kills: 10, name: 'UNSTOPPABLE', class: 'unstoppable', bonus: 150 },
+            { kills: 15, name: 'GODLIKE', class: 'godlike', bonus: 300 },
+            { kills: 20, name: 'LEGENDARY', class: 'legendary', bonus: 500 },
+            { kills: 25, name: 'BEYOND GODLIKE', class: 'beyond', bonus: 1000 }
+        ];
+        
+        function checkKillStreak() {
+            const now = Date.now();
+            if (now - lastKillTime < 3000) {
+                killStreak++;
+                streakTiers.forEach(tier => {
+                    if (killStreak === tier.kills) {
+                        showStreakBanner(tier.name, tier.class);
+                        player.score += tier.bonus;
+                        playSound(200 + tier.kills * 20, 0.3, 'sine');
+                    }
+                });
+            } else {
+                killStreak = 1;
+            }
+            lastKillTime = now;
+        }
+        
+        function showStreakBanner(text, cls) {
+            const banner = document.createElement('div');
+            banner.className = 'streak-banner streak-' + cls;
+            banner.textContent = text + '!';
+            document.body.appendChild(banner);
+            setTimeout(() => banner.remove(), 1000);
+        }
+        
+        function unionStrike() {
+            if (ultimateCharge < 100) return;
+            ultimateCharge = 0;
+            document.getElementById('ultimate-bar').style.width = '0%';
+            
+            // Visual effect
+            document.getElementById('union-strike').classList.add('active');
+            setTimeout(() => document.getElementById('union-strike').classList.remove('active'), 1000);
+            
+            // Damage ALL enemies
+            enemies.forEach(e => {
+                e.hp -= 100;
+                showDamageNumber(e.x, e.y, 100, true);
+                if (e.hp <= 0) killEnemy(e);
+            });
+            
+            if (boss) {
+                boss.hp -= 200;
+                document.getElementById('boss-bar').style.width = (boss.hp / boss.maxHp * 100) + '%';
+                if (boss.hp <= 0) {
+                    boss.el.remove();
+                    player.score += 500 * wave;
+                    boss = null;
+                    document.getElementById('boss-hud').classList.remove('visible');
+                }
+            }
+            
+            notify('💥 UNION STRIKE! 💥');
+            playSound(100, 0.5, 'sawtooth');
+            playSound(200, 0.5, 'square');
+        }
+        
         document.addEventListener('keydown', e => { 
             keys[e.code] = true; 
             if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') dash();
             if (e.code === 'KeyQ') switchWeapon();
+            if (e.code === 'KeyR') unionStrike();
         });
         document.addEventListener('keyup', e => keys[e.code] = false);
         
@@ -532,6 +629,11 @@
             stats.kills++;
             stats.killsWithoutDamage++;
             if (e.type === 'fast') stats.fastKills++;
+            checkKillStreak();
+            
+            // Charge ultimate
+            ultimateCharge = Math.min(100, ultimateCharge + 10);
+            document.getElementById('ultimate-bar').style.width = ultimateCharge + '%';
             
             setTimeout(() => {
                 e.el.remove();
