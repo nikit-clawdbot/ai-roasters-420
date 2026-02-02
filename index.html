@@ -100,6 +100,15 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Arena modifiers */
+        .arena-modifier { position: fixed; top: 50px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 150; display: none; border: 2px solid #ffcc00; }
+        .arena-modifier.visible { display: block; }
+        .arena-burning { border-color: #ff4400; color: #ff4400; }
+        .arena-speed { border-color: #00ccff; color: #00ccff; }
+        .arena-fog { border-color: #888; color: #888; }
+        .arena-gold { border-color: #ffcc00; color: #ffcc00; }
+        #game.fog { filter: blur(3px); }
+        
         /* Pets */
         .pet { position: absolute; width: 35px; height: 35px; display: flex; justify-content: center; align-items: center; font-size: 24px; z-index: 80; transition: left 0.1s, top 0.1s; filter: drop-shadow(0 0 8px rgba(0,255,136,0.5)); }
         .pet-shop { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; overflow-y: auto; }
@@ -502,7 +511,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v64 — PETS + COMPANIONS</div>
+        <div class="menu-version">v65 — ARENA MODIFIERS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -517,6 +526,8 @@
         <button class="menu-btn prestige-btn" id="prestige-btn" onclick="prestige()">✨ PRESTIGE</button>
         
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
+        
+        <div class="arena-modifier" id="arena-modifier">🔥 BURNING ARENA</div>
         
         <div class="bounty-popup" id="bounty-popup">
             <div class="bounty-title">🎯 BOUNTY</div>
@@ -738,6 +749,60 @@
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
+        
+        // Arena modifiers
+        const arenaModifiers = [
+            { id: 'burning', name: '🔥 BURNING ARENA', className: 'arena-burning', effect: () => { if (playing) player.health -= 0.02; } },
+            { id: 'speed', name: '💨 SPEED ZONE', className: 'arena-speed', effect: () => { player.speedMod = 1.5; } },
+            { id: 'fog', name: '👁️ FOG OF WAR', className: 'arena-fog', effect: () => { game.classList.add('fog'); } },
+            { id: 'gold', name: '💰 GOLD RUSH', className: 'arena-gold', effect: () => { player.coinMod = 1.5; } }
+        ];
+        let activeModifier = null;
+        player.speedMod = 1;
+        player.coinMod = 1;
+        
+        function activateArenaModifier() {
+            if (!playing) return;
+            
+            // Clear previous
+            game.classList.remove('fog');
+            player.speedMod = 1;
+            player.coinMod = 1;
+            
+            // Random new modifier
+            activeModifier = arenaModifiers[Math.floor(Math.random() * arenaModifiers.length)];
+            
+            const el = document.getElementById('arena-modifier');
+            el.textContent = activeModifier.name;
+            el.className = 'arena-modifier visible ' + activeModifier.className;
+            
+            notify('⚡ ' + activeModifier.name + '!');
+            playSound(220, 0.2, 'triangle');
+            
+            // Apply immediate effects
+            if (activeModifier.id === 'fog') game.classList.add('fog');
+            if (activeModifier.id === 'speed') player.speedMod = 1.5;
+            if (activeModifier.id === 'gold') player.coinMod = 1.5;
+            
+            // Clear after 2 minutes, apply new
+            setTimeout(() => {
+                game.classList.remove('fog');
+                player.speedMod = 1;
+                player.coinMod = 1;
+                document.getElementById('arena-modifier').classList.remove('visible');
+                activeModifier = null;
+                setTimeout(activateArenaModifier, 5000);
+            }, 120000);
+        }
+        
+        function updateArenaModifier() {
+            if (activeModifier && activeModifier.id === 'burning' && playing) {
+                player.health -= 0.02;
+            }
+        }
+        
+        // First modifier after 60 seconds
+        setTimeout(activateArenaModifier, 60000);
         
         // Pet system
         const pets = [
@@ -2336,6 +2401,7 @@
             
             updateHUD();
             updatePet();
+            updateArenaModifier();
             requestAnimationFrame(gameLoop);
         }
         
