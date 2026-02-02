@@ -95,6 +95,12 @@
         .damage-num { position: absolute; font-weight: bold; pointer-events: none; animation: damageFloat 0.8s forwards; z-index: 200; text-shadow: 2px 2px 0 #000; }
         .damage-num.normal { font-size: 16px; color: #fff; }
         .damage-num.crit { font-size: 24px; color: #ffcc00; }
+        /* Time attack */
+        .timer-display { position: fixed; top: 10px; right: 60px; background: rgba(0,0,0,0.8); padding: 8px 15px; border-radius: 8px; font-size: 24px; font-weight: bold; z-index: 100; display: none; }
+        .timer-display.visible { display: block; }
+        .timer-display.warning { color: #ff4444; animation: timerPulse 0.5s infinite; }
+        @keyframes timerPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        
         /* Rage mode */
         .rage-bar { position: fixed; bottom: 120px; right: 20px; width: 50px; height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; z-index: 100; }
         .rage-bar-fill { height: 100%; background: linear-gradient(90deg, #ff0000, #ff4400); width: 0%; transition: width 0.3s; }
@@ -305,6 +311,7 @@
         
         <div class="rage-bar"><div class="rage-bar-fill" id="rage-bar"></div></div>
         <div class="rage-overlay" id="rage-overlay"></div>
+        <div class="timer-display" id="timer-display">⏱️ 60</div>
     </div>
     
     <button class="sound-toggle" id="sound-toggle" onclick="toggleSound()">🔊</button>
@@ -354,9 +361,10 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v48 — 6 ENEMY TYPES</div>
+        <div class="menu-version">v49 — TIME ATTACK</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
+        <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
         <button class="menu-btn" onclick="startGame('boss')">👹 BOSS RUSH</button>
         <button class="menu-btn" onclick="startGame('endless')">∞ ENDLESS</button>
         <button class="menu-btn" onclick="showStats()">📊 STATS</button>
@@ -368,6 +376,7 @@
         const playerEl = document.getElementById('player');
         let playing = false, gameMode = 'normal';
         let difficulty = 1; // 1 = normal, 2 = hard
+        let timeLeft = 60;
         
         // Player stats
         let player = { 
@@ -627,6 +636,13 @@
             gameMode = mode;
             difficulty = (mode === 'hard') ? 2 : 1;
             if (mode === 'hard') mode = 'normal'; // Hard uses normal wave system
+            if (mode === 'timed') {
+                timeLeft = 60;
+                document.getElementById('timer-display').classList.add('visible');
+                document.getElementById('timer-display').textContent = '⏱️ 60';
+            } else {
+                document.getElementById('timer-display').classList.remove('visible');
+            }
             document.getElementById('menu').classList.add('hidden');
             playing = true;
             wave = 1;
@@ -1497,7 +1513,23 @@
         }
         
         // Track stats in game loop
-        setInterval(() => { if (playing) { stats.gameTime++; checkAchievements(); updateDailyChallenge(); } }, 1000);
+        setInterval(() => { 
+            if (playing) { 
+                stats.gameTime++; 
+                checkAchievements();
+                
+                // Time attack mode
+                if (gameMode === 'timed') {
+                    timeLeft--;
+                    document.getElementById('timer-display').textContent = '⏱️ ' + timeLeft;
+                    if (timeLeft <= 10) document.getElementById('timer-display').classList.add('warning');
+                    if (timeLeft <= 0) {
+                        notify('⏱️ TIME UP! Score: ' + player.score);
+                        endGame();
+                    }
+                }
+            } 
+        }, 1000);
         
         // ==================== MINIMAP ====================
         const minimap = document.getElementById('minimap');
