@@ -100,6 +100,9 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Mini-boss */
+        .enemy.miniboss { width: 60px; height: 60px; background: linear-gradient(135deg, #ff6600, #cc3300); border-radius: 12px; box-shadow: 0 0 25px rgba(255,102,0,0.7); font-size: 30px; border: 3px solid #ffcc00; }
+        
         /* Skill tree */
         .skill-tree { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; overflow-y: auto; }
         .skill-tree.visible { display: flex; }
@@ -484,7 +487,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v62 — SKILL TREE</div>
+        <div class="menu-version">v63 — MINI-BOSSES</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -1413,6 +1416,10 @@
             const types = Object.keys(enemyTypes);
             let type = 'normal';
             const r = Math.random();
+            
+            // Mini-boss chance (every 10 kills after wave 3)
+            const isMiniBoss = wave >= 3 && stats.kills % 10 === 9 && Math.random() < 0.5;
+            
             if (wave >= 5 && r > 0.92) type = 'healer';
             else if (wave >= 4 && r > 0.88) type = 'bomber';
             else if (wave >= 3 && r > 0.8) type = 'shooter';
@@ -1421,8 +1428,20 @@
             
             const et = enemyTypes[type];
             const el = document.createElement('div');
-            el.className = 'enemy ' + type;
-            el.innerHTML = '<span>' + et.emoji + '</span><div class="enemy-hp"><div class="enemy-hp-fill" style="width:100%"></div></div>';
+            
+            // Mini-boss modifications
+            const hpMult = isMiniBoss ? 3 : 1;
+            const scoreMult = isMiniBoss ? 5 : 1;
+            
+            if (isMiniBoss) {
+                el.className = 'enemy miniboss';
+                el.innerHTML = '<span>👿</span><div class="enemy-hp"><div class="enemy-hp-fill" style="width:100%"></div></div>';
+                notify('👿 MINI-BOSS INCOMING!');
+                playSound(150, 0.3, 'sawtooth');
+            } else {
+                el.className = 'enemy ' + type;
+                el.innerHTML = '<span>' + et.emoji + '</span><div class="enemy-hp"><div class="enemy-hp-fill" style="width:100%"></div></div>';
+            }
             
             // Spawn from edges
             const side = Math.floor(Math.random() * 4);
@@ -1436,7 +1455,7 @@
             el.style.top = y + 'px';
             game.appendChild(el);
             
-            enemies.push({ el, x, y, type, hp: et.hp * (1 + wave * 0.1) * difficulty, maxHp: et.hp * (1 + wave * 0.1) * difficulty, speed: et.speed * (0.8 + difficulty * 0.2), damage: et.damage * difficulty, score: et.score * difficulty, xp: et.xp, shoots: et.shoots, shootCooldown: 0 });
+            enemies.push({ el, x, y, type: isMiniBoss ? 'miniboss' : type, hp: et.hp * (1 + wave * 0.1) * difficulty * hpMult, maxHp: et.hp * (1 + wave * 0.1) * difficulty * hpMult, speed: et.speed * (0.8 + difficulty * 0.2), damage: et.damage * difficulty * (isMiniBoss ? 2 : 1), score: et.score * difficulty * scoreMult, xp: et.xp * (isMiniBoss ? 3 : 1), shoots: et.shoots, shootCooldown: 0, isMiniBoss });
         }
         
         function spawnBoss() {
@@ -1750,6 +1769,12 @@
             
             // Bounty tracking
             updateBounty(e.type, 1);
+            
+            // Mini-boss loot
+            if (e.isMiniBoss) {
+                dropBossLoot();
+                spawnParticles(e.x, e.y, '#ff6600', 25);
+            }
             
             // Bomber explosion
             if (e.type === 'bomber') {
