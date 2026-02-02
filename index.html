@@ -93,6 +93,14 @@
         .damage-num { position: absolute; font-weight: bold; pointer-events: none; animation: damageFloat 0.8s forwards; z-index: 200; text-shadow: 2px 2px 0 #000; }
         .damage-num.normal { font-size: 16px; color: #fff; }
         .damage-num.crit { font-size: 24px; color: #ffcc00; }
+        /* Rage mode */
+        .rage-bar { position: fixed; bottom: 120px; right: 20px; width: 50px; height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; z-index: 100; }
+        .rage-bar-fill { height: 100%; background: linear-gradient(90deg, #ff0000, #ff4400); width: 0%; transition: width 0.3s; }
+        .rage-overlay { position: fixed; inset: 0; background: rgba(255,0,0,0.2); pointer-events: none; z-index: 50; opacity: 0; transition: opacity 0.3s; }
+        .rage-overlay.active { opacity: 1; animation: ragePulse 0.5s infinite; }
+        @keyframes ragePulse { 0%, 100% { background: rgba(255,0,0,0.2); } 50% { background: rgba(255,0,0,0.4); } }
+        .action-btn.rage { width: 45px; height: 45px; background: linear-gradient(135deg, #ff0000, #880000); margin-bottom: 80px; }
+        
         /* Achievements gallery */
         .achievements-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 400; justify-content: center; align-items: center; flex-direction: column; overflow-y: auto; padding: 20px; }
         .achievements-overlay.visible { display: flex; }
@@ -286,11 +294,15 @@
             <div class="joystick-stick" id="stick"></div>
         </div>
         <div class="action-btns">
+            <button class="action-btn rage" id="btn-rage">😡</button>
             <button class="action-btn weapon" id="btn-weapon">🔄</button>
             <button class="action-btn dash" id="btn-dash">💨</button>
             <button class="action-btn special" id="btn-special">⚡</button>
             <button class="action-btn attack" id="btn-attack">🔥</button>
         </div>
+        
+        <div class="rage-bar"><div class="rage-bar-fill" id="rage-bar"></div></div>
+        <div class="rage-overlay" id="rage-overlay"></div>
     </div>
     
     <button class="sound-toggle" id="sound-toggle" onclick="toggleSound()">🔊</button>
@@ -340,7 +352,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v46 — 16 ACHIEVEMENTS</div>
+        <div class="menu-version">v47 — RAGE MODE</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('boss')">👹 BOSS RUSH</button>
@@ -428,6 +440,40 @@
             document.body.appendChild(f);
             setTimeout(() => f.remove(), 100);
         }
+        
+        // Rage mode
+        let rageCharge = 0;
+        let rageActive = false;
+        let rageTimer = 0;
+        
+        function activateRage() {
+            if (rageCharge < 100 || rageActive) return;
+            rageCharge = 0;
+            rageActive = true;
+            rageTimer = 600; // 10 seconds at 60fps
+            document.getElementById('rage-bar').style.width = '0%';
+            document.getElementById('rage-overlay').classList.add('active');
+            notify('😡 RAGE MODE!');
+            playSound(100, 0.3, 'sawtooth');
+            playSound(150, 0.3, 'square');
+        }
+        
+        function updateRage() {
+            if (rageActive) {
+                rageTimer--;
+                if (rageTimer <= 0) {
+                    rageActive = false;
+                    document.getElementById('rage-overlay').classList.remove('active');
+                    notify('Rage ended');
+                }
+            } else {
+                // Charge rage over time
+                rageCharge = Math.min(100, rageCharge + 0.05);
+                document.getElementById('rage-bar').style.width = rageCharge + '%';
+            }
+        }
+        
+        document.getElementById('btn-rage').addEventListener('touchstart', e => { e.preventDefault(); activateRage(); });
         
         // Tutorial system
         const tutorialSteps = [
@@ -823,6 +869,7 @@
             if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') dash();
             if (e.code === 'KeyQ') switchWeapon();
             if (e.code === 'KeyR') unionStrike();
+            if (e.code === 'KeyF') activateRage();
         });
         document.addEventListener('keyup', e => keys[e.code] = false);
         
@@ -878,9 +925,11 @@
                 if (dist < range) {
                     hitAny = true;
                     
-                    // Critical hit chance (20%)
-                    const isCrit = Math.random() < 0.2;
-                    const damage = isCrit ? w.damage * 2.5 : w.damage;
+                    // Critical hit chance (20%, or 40% in rage)
+                    const critChance = rageActive ? 0.4 : 0.2;
+                    const isCrit = Math.random() < critChance;
+                    const baseDamage = rageActive ? w.damage * 2 : w.damage;
+                    const damage = isCrit ? baseDamage * 2.5 : baseDamage;
                     e.hp -= damage;
                     
                     // Update health bar
@@ -1086,8 +1135,9 @@
             if (keys['KeyD'] || keys['ArrowRight']) mx = 1;
             if (keys['Space']) attack();
             
-            player.x += mx * player.speed;
-            player.y += my * player.speed;
+            const speedMult = rageActive ? 1.5 : 1;
+            player.x += mx * player.speed * speedMult;
+            player.y += my * player.speed * speedMult;
             
             // Player trail when moving fast
             if (Math.abs(mx) > 0.3 || Math.abs(my) > 0.3 || isDashing) {
@@ -1101,6 +1151,7 @@
             }
             if (dashCooldown > 0) dashCooldown--;
             if (attackCooldown > 0) attackCooldown--;
+            updateRage();
             
             player.x = Math.max(20, Math.min(window.innerWidth - 60, player.x));
             player.y = Math.max(80, Math.min(window.innerHeight - 150, player.y));
