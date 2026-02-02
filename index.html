@@ -100,6 +100,12 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Prestige */
+        .prestige-badge { position: fixed; top: 10px; left: 10px; background: linear-gradient(135deg, #aa00ff, #6600aa); padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold; color: #fff; z-index: 100; display: none; box-shadow: 0 0 15px rgba(170,0,255,0.5); }
+        .prestige-badge.visible { display: block; }
+        .prestige-btn { display: none; background: linear-gradient(135deg, #aa00ff, #6600aa); }
+        .prestige-btn.visible { display: block; }
+        
         /* Daily login */
         .daily-login { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); padding: 30px; border-radius: 15px; border: 3px solid #ffcc00; z-index: 500; text-align: center; display: none; }
         .daily-login.visible { display: block; }
@@ -447,7 +453,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v56 — DAILY LOGIN + LEVELS</div>
+        <div class="menu-version">v57 — PRESTIGE SYSTEM</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -457,6 +463,9 @@
         <button class="menu-btn" onclick="showAchievementsGallery()">🏆 ACHIEVEMENTS</button>
         <button class="menu-btn" onclick="showShop()">🛒 SHOP</button>
         <button class="menu-btn" onclick="showSkins()">🎨 SKINS</button>
+        <button class="menu-btn prestige-btn" id="prestige-btn" onclick="prestige()">✨ PRESTIGE</button>
+        
+        <div class="prestige-badge" id="prestige-badge">✨ P0</div>
     </div>
 
     <script>
@@ -653,6 +662,62 @@
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
         
+        // Prestige system
+        let prestigeLevel = parseInt(localStorage.getItem('ai_roasters_prestige') || '0');
+        
+        function checkPrestige() {
+            if (playerLevel >= 20) {
+                document.getElementById('prestige-btn').classList.add('visible');
+            }
+            if (prestigeLevel > 0) {
+                document.getElementById('prestige-badge').classList.add('visible');
+                document.getElementById('prestige-badge').textContent = '✨ P' + prestigeLevel;
+            }
+        }
+        
+        function prestige() {
+            if (playerLevel < 20) return;
+            
+            prestigeLevel++;
+            playerLevel = 1;
+            playerXp = 0;
+            xpToLevel = 100;
+            
+            // Rewards
+            totalCoins += 500;
+            saveTotalCoins();
+            
+            localStorage.setItem('ai_roasters_prestige', prestigeLevel);
+            localStorage.setItem('ai_roasters_level', playerLevel);
+            localStorage.setItem('ai_roasters_xp', playerXp);
+            
+            // Visual effect
+            const burst = document.createElement('div');
+            burst.className = 'level-up-burst';
+            burst.style.borderColor = '#aa00ff';
+            document.body.appendChild(burst);
+            setTimeout(() => burst.remove(), 1000);
+            
+            const text = document.createElement('div');
+            text.className = 'level-up-text';
+            text.style.color = '#aa00ff';
+            text.textContent = '✨ PRESTIGE ' + prestigeLevel + '! ✨';
+            document.body.appendChild(text);
+            setTimeout(() => text.remove(), 1500);
+            
+            document.getElementById('prestige-btn').classList.remove('visible');
+            document.getElementById('prestige-badge').classList.add('visible');
+            document.getElementById('prestige-badge').textContent = '✨ P' + prestigeLevel;
+            
+            notify('✨ PRESTIGE ' + prestigeLevel + '! +500 coins!');
+            playSound(220, 0.3, 'sine');
+            playSound(440, 0.3, 'sine');
+            playSound(880, 0.3, 'sine');
+        }
+        
+        // Check prestige on load
+        setTimeout(checkPrestige, 600);
+        
         // Daily login system
         let playerLevel = parseInt(localStorage.getItem('ai_roasters_level') || '1');
         let playerXp = parseInt(localStorage.getItem('ai_roasters_xp') || '0');
@@ -722,6 +787,7 @@
             notify('⭐ LEVEL UP! +5 HP, +50 coins!');
             playSound(440, 0.3, 'sine');
             playSound(880, 0.3, 'sine');
+            checkPrestige(); // Check if can prestige
         }
         
         // Check daily login on load
