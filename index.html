@@ -100,6 +100,16 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Lifetime stats */
+        .stats-panel { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; z-index: 450; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
+        .stats-panel.visible { display: flex; }
+        .stats-panel h2 { color: #00ff88; font-size: 28px; margin-bottom: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-width: 350px; }
+        .stat-item { background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; text-align: center; }
+        .stat-icon { font-size: 24px; }
+        .stat-value { font-size: 18px; font-weight: bold; color: #00ff88; margin: 5px 0; }
+        .stat-label { font-size: 11px; color: #888; }
+        
         /* Title system */
         .player-title { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.8); padding: 8px 15px; border-radius: 20px; font-size: 14px; z-index: 100; border: 2px solid #ffcc00; }
         .title-noob { border-color: #888; color: #888; }
@@ -564,7 +574,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v70 — 70% MILESTONE 🎉</div>
+        <div class="menu-version">v71 — LIFETIME STATS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -579,6 +589,7 @@
         <button class="menu-btn" onclick="showEquipment()">🎽 EQUIP</button>
         <button class="menu-btn" onclick="showAchieveGallery()">🏆 ACHIEVE</button>
         <button class="menu-btn" onclick="showLeaderboard()">📊 SCORES</button>
+        <button class="menu-btn" onclick="showLifetimeStats()">📈 STATS</button>
         <button class="menu-btn prestige-btn" id="prestige-btn" onclick="prestige()">✨ PRESTIGE</button>
         
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
@@ -638,6 +649,12 @@
             <h2>📊 LEADERBOARD</h2>
             <div class="lb-list" id="lb-list"></div>
             <button class="skill-close" onclick="closeLeaderboard()">CLOSE</button>
+        </div>
+        
+        <div class="stats-panel" id="stats-panel">
+            <h2>📈 LIFETIME STATS</h2>
+            <div class="stats-grid" id="stats-grid"></div>
+            <button class="skill-close" onclick="closeLifetimeStats()">CLOSE</button>
         </div>
     </div>
 
@@ -834,6 +851,51 @@
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
+        
+        // Lifetime stats panel
+        let lifetimeStats = JSON.parse(localStorage.getItem('ai_roasters_lifetime') || '{"kills":0,"deaths":0,"totalCoins":0,"bossKills":0,"maxCombo":0,"maxWave":0}');
+        
+        function updateLifetimeStats() {
+            lifetimeStats.kills = Math.max(lifetimeStats.kills, stats.kills);
+            lifetimeStats.bossKills = Math.max(lifetimeStats.bossKills, stats.bossKills);
+            lifetimeStats.maxCombo = Math.max(lifetimeStats.maxCombo, player.combo);
+            lifetimeStats.maxWave = Math.max(lifetimeStats.maxWave, wave);
+            localStorage.setItem('ai_roasters_lifetime', JSON.stringify(lifetimeStats));
+        }
+        
+        function incrementDeaths() {
+            lifetimeStats.deaths++;
+            localStorage.setItem('ai_roasters_lifetime', JSON.stringify(lifetimeStats));
+        }
+        
+        function showLifetimeStats() {
+            updateLifetimeStats();
+            const grid = document.getElementById('stats-grid');
+            const statsList = [
+                { icon: '💀', value: lifetimeStats.kills, label: 'Total Kills' },
+                { icon: '☠️', value: lifetimeStats.deaths, label: 'Deaths' },
+                { icon: '💰', value: totalCoins, label: 'Total Coins' },
+                { icon: '👿', value: lifetimeStats.bossKills, label: 'Bosses Killed' },
+                { icon: '🔥', value: lifetimeStats.maxCombo, label: 'Max Combo' },
+                { icon: '🌊', value: lifetimeStats.maxWave, label: 'Max Wave' },
+                { icon: '⭐', value: bestScore, label: 'Best Score' },
+                { icon: '🏆', value: unlockedAchievements.length + '/20', label: 'Achievements' },
+                { icon: '👑', value: currentTitle.name, label: 'Title' },
+                { icon: '✨', value: 'P' + prestigeLevel, label: 'Prestige' }
+            ];
+            
+            grid.innerHTML = '';
+            statsList.forEach(s => {
+                const div = document.createElement('div');
+                div.className = 'stat-item';
+                div.innerHTML = `<div class="stat-icon">${s.icon}</div><div class="stat-value">${s.value}</div><div class="stat-label">${s.label}</div>`;
+                grid.appendChild(div);
+            });
+            
+            document.getElementById('stats-panel').classList.add('visible');
+        }
+        
+        function closeLifetimeStats() { document.getElementById('stats-panel').classList.remove('visible'); }
         
         // Title system
         const titles = [
@@ -2812,6 +2874,8 @@
             if (player.health <= 0) {
                 updateWeeklyBest(player.score); // Track weekly best
                 addToLeaderboard(player.score, wave, player.combo); // Leaderboard
+                incrementDeaths(); // Lifetime stats
+                updateLifetimeStats();
                 player.health = player.maxHealth;
                 player.x = window.innerWidth / 2;
                 player.y = window.innerHeight / 2;
