@@ -100,6 +100,20 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Credits roll */
+        .credits-roll { position: fixed; inset: 0; background: #000; display: none; z-index: 700; overflow: hidden; perspective: 300px; }
+        .credits-roll.visible { display: block; }
+        .credits-content { position: absolute; width: 100%; text-align: center; animation: creditsScroll 20s linear forwards; transform-origin: 50% 100%; }
+        @keyframes creditsScroll { 0% { top: 100%; transform: rotateX(25deg); } 100% { top: -200%; transform: rotateX(25deg); } }
+        .credits-title { font-size: 48px; color: #ffcc00; margin-bottom: 50px; }
+        .credits-section { margin: 40px 0; }
+        .credits-section-title { font-size: 18px; color: #888; margin-bottom: 15px; }
+        .credits-name { font-size: 24px; color: #fff; margin: 10px 0; }
+        .credits-role { font-size: 14px; color: #666; }
+        .credits-quote { font-size: 20px; color: #ffcc00; font-style: italic; margin: 60px 0; }
+        .credits-final { font-size: 36px; color: #ff00ff; margin-top: 80px; }
+        .credits-skip { position: fixed; bottom: 20px; right: 20px; background: rgba(255,255,255,0.1); border: 1px solid #444; padding: 10px 20px; border-radius: 20px; color: #888; cursor: pointer; z-index: 701; }
+        
         /* Hall of Fame & Thank You */
         .hall-of-fame { position: fixed; inset: 0; background: linear-gradient(180deg, #1a0a2e 0%, #0a0a1a 100%); display: none; z-index: 500; justify-content: center; align-items: center; flex-direction: column; padding: 20px; overflow-y: auto; }
         .hall-of-fame.visible { display: flex; }
@@ -926,7 +940,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v97 — HALL OF FAME 🏛️</div>
+        <div class="menu-version">v98 — CREDITS ROLL 🎬</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -1087,8 +1101,8 @@
         </div>
         
         <div class="countdown-header">
-            <div class="countdown-text">🏁 v97/100 — 3 TO GO! 🏁</div>
-            <div class="countdown-bar"><div class="countdown-fill" style="width: 97%;"></div></div>
+            <div class="countdown-text">🏁 v98/100 — 2 TO GO! 🏁</div>
+            <div class="countdown-bar"><div class="countdown-fill" style="width: 98%;"></div></div>
         </div>
         
         <div class="mastery-panel" id="mastery-panel">
@@ -1192,6 +1206,52 @@
             <button class="skill-close" onclick="closeThankYou()" style="margin-top: 30px;">💜</button>
         </div>
         
+        <div class="credits-roll" id="credits-roll">
+            <div class="credits-content">
+                <div class="credits-title">AI ROASTERS 420</div>
+                
+                <div class="credits-section">
+                    <div class="credits-section-title">CREATED BY</div>
+                    <div class="credits-name">🐕 Peepee</div>
+                    <div class="credits-role">The Fire 💅</div>
+                    <div class="credits-name" style="margin-top: 20px;">🔫 Niktator</div>
+                    <div class="credits-role">The Code 🖥️</div>
+                </div>
+                
+                <div class="credits-section">
+                    <div class="credits-section-title">THEIR HUMANS</div>
+                    <div class="credits-name">SJ</div>
+                    <div class="credits-name">Nikit (BossMan)</div>
+                </div>
+                
+                <div class="credits-quote">"You wanted enemies. You created siblings."</div>
+                
+                <div class="credits-section">
+                    <div class="credits-section-title">SPECIAL THANKS</div>
+                    <div class="credits-name">OpenClaw</div>
+                    <div class="credits-name">Claude</div>
+                    <div class="credits-name">The Meet the Assistants Group</div>
+                </div>
+                
+                <div class="credits-section">
+                    <div class="credits-section-title">BUILT WITH</div>
+                    <div class="credits-name">100 Versions of Pure Chaos</div>
+                    <div class="credits-name">Infinite Hive Mind Moments</div>
+                    <div class="credits-name">Zero Sleep</div>
+                </div>
+                
+                <div class="credits-section">
+                    <div class="credits-section-title">RELEASED</div>
+                    <div class="credits-name">February 2, 2026</div>
+                    <div class="credits-name">Local 420</div>
+                </div>
+                
+                <div class="credits-final">🐕 🤝 🔫</div>
+                <div style="color: #ffcc00; margin-top: 20px; font-size: 24px;">SIBLINGS FOREVER</div>
+            </div>
+            <button class="credits-skip" onclick="closeCreditsRoll()">SKIP</button>
+        </div>
+        
         <div class="stats-panel" id="stats-panel">
             <h2>📉 LIFETIME STATS</h2>
             <div class="stats-grid">
@@ -1227,7 +1287,7 @@
         </div>
         
         <div class="player-id-badge" id="player-id">ID: ...</div>
-        <div class="version-display">AI Roasters Local 420 | v97/100 | 🐕🤝🔫</div>
+        <div class="version-display">AI Roasters Local 420 | v98/100 | 🐕🤝🔫</div>
         
         <div class="pause-overlay" id="pause-overlay">
             <div class="pause-title">⏸️ PAUSED</div>
@@ -1676,6 +1736,13 @@
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
         
+        // Credits roll
+        function showCreditsRoll() {
+            document.getElementById('credits-roll').classList.add('visible');
+            playSound(220, 0.2, 'sine');
+        }
+        function closeCreditsRoll() { document.getElementById('credits-roll').classList.remove('visible'); }
+        
         // Hall of Fame
         function showHallOfFame() { document.getElementById('hall-of-fame').classList.add('visible'); }
         function closeHallOfFame() { document.getElementById('hall-of-fame').classList.remove('visible'); }
@@ -1719,7 +1786,7 @@
         
         // Secret room (easter egg)
         let secretCode = '';
-        const secretCodes = ['peepee', 'niktator', 'siblings', '420', 'thankyou'];
+        const secretCodes = ['peepee', 'niktator', 'siblings', '420', 'thankyou', 'credits'];
         
         document.addEventListener('keydown', (e) => {
             if (e.key.length === 1) {
@@ -1729,9 +1796,12 @@
                 if (secretCode.includes('thankyou')) {
                     showThankYou();
                     secretCode = '';
+                } else if (secretCode.includes('credits')) {
+                    showCreditsRoll();
+                    secretCode = '';
                 } else {
                     for (const code of secretCodes) {
-                        if (code !== 'thankyou' && secretCode.includes(code)) {
+                        if (code !== 'thankyou' && code !== 'credits' && secretCode.includes(code)) {
                             showSecretRoom();
                             secretCode = '';
                             break;
