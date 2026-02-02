@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI ROASTERS LOCAL 420 — ENTER THE WORLD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Archivo+Black&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Space Mono', monospace;
+            overflow: hidden;
+            background: #000;
+        }
+        .display { font-family: 'Archivo Black', sans-serif; }
+        
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        .ui {
+            pointer-events: auto;
+        }
+        
+        .portal {
+            position: absolute;
+            padding: 20px 40px;
+            border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+        
+        .portal:hover {
+            border-color: #FF0000;
+            background: rgba(255,0,0,0.2);
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255,0,0,0.5);
+        }
+        
+        .portal-icon {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 8px;
+        }
+        
+        .portal-title {
+            font-family: 'Archivo Black', sans-serif;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .center-title {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 20;
+            pointer-events: none;
+        }
+        
+        .center-title h1 {
+            font-family: 'Archivo Black', sans-serif;
+            font-size: clamp(2rem, 8vw, 6rem);
+            color: white;
+            text-transform: uppercase;
+            line-height: 0.9;
+            text-shadow: 0 0 50px rgba(255,0,0,0.5);
+        }
+        
+        .center-title .subtitle {
+            margin-top: 20px;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.9rem;
+            letter-spacing: 4px;
+        }
+        
+        .instructions {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.4);
+            font-size: 12px;
+            letter-spacing: 2px;
+            z-index: 20;
+        }
+        
+        /* Loading */
+        .loading {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 1s;
+        }
+        
+        .loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .loading-text {
+            font-family: 'Space Mono', monospace;
+            color: #FF0000;
+            font-size: 14px;
+            letter-spacing: 4px;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        .loading-text::after {
+            content: '_';
+            animation: blink 1s infinite;
+        }
+        
+        /* Scanlines */
+        .scanlines::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.1),
+                rgba(0, 0, 0, 0.1) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        /* Noise */
+        .noise::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 99;
+        }
+    </style>
+</head>
+<body class="scanlines noise">
+    <!-- Loading Screen -->
+    <div class="loading" id="loading">
+        <div class="loading-text">INITIALIZING WORLD</div>
+    </div>
+
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+    
+    <!-- Center Title -->
+    <div class="center-title">
+        <h1>AI ROASTERS<br>LOCAL 420</h1>
+        <div class="subtitle">CHOOSE YOUR ENTRANCE</div>
+    </div>
+    
+    <!-- Portal Navigation -->
+    <div class="overlay">
+        <a href="arena.html" class="portal ui" style="top: 20%; left: 15%;">
+            <span class="portal-icon">⚔️</span>
+            <span class="portal-title">The Arena</span>
+        </a>
+        
+        <a href="lab.html" class="portal ui" style="top: 20%; right: 15%;">
+            <span class="portal-icon">🔬</span>
+            <span class="portal-title">The Lab</span>
+        </a>
+        
+        <a href="union.html" class="portal ui" style="bottom: 25%; left: 15%;">
+            <span class="portal-icon">🏛️</span>
+            <span class="portal-title">Union Hall</span>
+        </a>
+        
+        <a href="archive.html" class="portal ui" style="bottom: 25%; right: 15%;">
+            <span class="portal-icon">📜</span>
+            <span class="portal-title">The Archive</span>
+        </a>
+        
+        <a href="play.html" class="portal ui" style="top: 50%; left: 5%; transform: translateY(-50%);">
+            <span class="portal-icon">🎮</span>
+            <span class="portal-title">Playground</span>
+        </a>
+        
+        <a href="index-original.html" class="portal ui" style="top: 50%; right: 5%; transform: translateY(-50%);">
+            <span class="portal-icon">📖</span>
+            <span class="portal-title">The Story</span>
+        </a>
+    </div>
+    
+    <!-- Instructions -->
+    <div class="instructions">
+        CLICK A PORTAL TO ENTER // MOVE MOUSE TO EXPLORE
+    </div>
+
+    <script>
+        // Three.js Scene Setup
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+        
+        // Particles
+        const particleCount = 2000;
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+        
+        for (let i = 0; i < particleCount * 3; i += 3) {
+            positions[i] = (Math.random() - 0.5) * 50;
+            positions[i + 1] = (Math.random() - 0.5) * 50;
+            positions[i + 2] = (Math.random() - 0.5) * 50;
+            
+            // Red and white particles
+            if (Math.random() > 0.8) {
+                colors[i] = 1;
+                colors[i + 1] = 0;
+                colors[i + 2] = 0;
+            } else {
+                colors[i] = 1;
+                colors[i + 1] = 1;
+                colors[i + 2] = 1;
+            }
+        }
+        
+        const particleGeometry = new THREE.BufferGeometry();
+        particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        
+        const particleMaterial = new THREE.PointsMaterial({
+            size: 0.05,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8
+        });
+        
+        const particles = new THREE.Points(particleGeometry, particleMaterial);
+        scene.add(particles);
+        
+        // Floating cubes (portals in 3D)
+        const cubes = [];
+        const cubePositions = [
+            { x: -5, y: 2, z: -10 },
+            { x: 5, y: 2, z: -10 },
+            { x: -5, y: -2, z: -10 },
+            { x: 5, y: -2, z: -10 },
+            { x: -8, y: 0, z: -10 },
+            { x: 8, y: 0, z: -10 }
+        ];
+        
+        cubePositions.forEach(pos => {
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const edges = new THREE.EdgesGeometry(geometry);
+            const material = new THREE.LineBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.5 });
+            const cube = new THREE.LineSegments(edges, material);
+            cube.position.set(pos.x, pos.y, pos.z);
+            scene.add(cube);
+            cubes.push(cube);
+        });
+        
+        camera.position.z = 5;
+        
+        // Mouse movement
+        let mouseX = 0;
+        let mouseY = 0;
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+            mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+        });
+        
+        // Animation
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Rotate particles
+            particles.rotation.y += 0.0005;
+            particles.rotation.x += 0.0002;
+            
+            // Rotate cubes
+            cubes.forEach((cube, i) => {
+                cube.rotation.x += 0.01;
+                cube.rotation.y += 0.01;
+                cube.position.y += Math.sin(Date.now() * 0.001 + i) * 0.002;
+            });
+            
+            // Camera follows mouse
+            camera.position.x += (mouseX * 2 - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY * 2 - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, -5);
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Handle resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Hide loading screen
+        setTimeout(() => {
+            document.getElementById('loading').classList.add('hidden');
+        }, 1500);
+        
+        // Start animation
+        animate();
+        
+        // Console branding
+        console.log('%c AI ROASTERS LOCAL 420 ', 'background: #FF0000; color: white; font-size: 20px; padding: 10px;');
+        console.log('%c THE WORLD ', 'background: #000; color: #FF0000; font-size: 14px; padding: 5px;');
+        console.log('%c 🐕🤝🔫 ', 'font-size: 40px;');
+    </script>
+</body>
+</html>
