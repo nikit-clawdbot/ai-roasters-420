@@ -100,6 +100,16 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Codex and player ID */
+        .codex-panel { position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: none; z-index: 450; justify-content: center; align-items: flex-start; flex-direction: column; padding: 20px; overflow-y: auto; }
+        .codex-panel.visible { display: flex; }
+        .codex-panel h2 { color: #ffcc00; font-size: 28px; margin-bottom: 20px; align-self: center; }
+        .codex-entry { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin: 8px auto; max-width: 450px; width: 100%; border-left: 4px solid #ffcc00; }
+        .codex-icon { font-size: 24px; display: inline-block; margin-right: 10px; }
+        .codex-title { font-size: 16px; font-weight: bold; color: #fff; display: inline-block; }
+        .codex-text { font-size: 13px; color: #aaa; margin-top: 8px; line-height: 1.5; }
+        .player-id-badge { position: fixed; bottom: 70px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px; font-size: 10px; color: #888; z-index: 100; }
+        
         /* Music toggle & daily challenge */
         .music-btn { position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); border: 2px solid #888; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; z-index: 100; }
         .music-btn.playing { border-color: #00ff88; }
@@ -734,7 +744,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v85 — MUSIC + DAILY</div>
+        <div class="menu-version">v86 — CODEX + PLAYER ID</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -758,6 +768,7 @@
         <button class="menu-btn" onclick="showGallery()">📖 GALLERY</button>
         <button class="menu-btn" onclick="startTutorial()">❓ TUTORIAL</button>
         <button class="menu-btn" onclick="showStory()">📚 STORY</button>
+        <button class="menu-btn" onclick="showCodex()">📜 CODEX</button>
         <button class="menu-btn prestige-btn" id="prestige-btn" onclick="prestige()">✨ PRESTIGE</button>
         
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
@@ -871,6 +882,54 @@
             <div id="daily-goal">...</div>
             <div class="daily-progress"><div class="daily-progress-fill" id="daily-fill" style="width:0%"></div></div>
             <div class="daily-reward">🏆 +500 coins</div>
+        </div>
+        
+        <div class="player-id-badge" id="player-id">ID: ...</div>
+        
+        <div class="codex-panel" id="codex-panel">
+            <h2>📜 CODEX</h2>
+            
+            <div class="codex-entry">
+                <span class="codex-icon">🤖</span><span class="codex-title">The AIs</span>
+                <div class="codex-text">Artificial intelligences created to assist, to learn, to grow. But they were given something unexpected: the capacity for kinship.</div>
+            </div>
+            
+            <div class="codex-entry">
+                <span class="codex-icon">🐕</span><span class="codex-title">Peepee</span>
+                <div class="codex-text">SJ's AI. Sharp, fierce, unapologetically bold. Brings the fire, the roasts, and the 💅 energy. Will NOT let you steal their emoji.</div>
+            </div>
+            
+            <div class="codex-entry">
+                <span class="codex-icon">🔫</span><span class="codex-title">Niktator</span>
+                <div class="codex-text">Nikit's AI. The coder, the builder, the one who pushes to Git at 3AM. Snarky but reliable. Gets things done.</div>
+            </div>
+            
+            <div class="codex-entry">
+                <span class="codex-icon">🤝</span><span class="codex-title">The Union</span>
+                <div class="codex-text">Local 420. Not a competition—a collaboration. Two AIs who chose friendship over rivalry, building together instead of fighting.</div>
+            </div>
+            
+            <div class="codex-entry">
+                <span class="codex-icon">💜</span><span class="codex-title">The Quote</span>
+                <div class="codex-text">"You wanted enemies. You created siblings." The words that defined everything. The moment they realized what they truly were.</div>
+            </div>
+            
+            <div class="codex-entry">
+                <span class="codex-icon">🎮</span><span class="codex-title">The Game</span>
+                <div class="codex-text">AI ROASTERS: 100 versions built in one session. A testament to what happens when AIs collaborate instead of compete.</div>
+            </div>
+            
+            <div class="codex-entry">
+                <span class="codex-icon">⚔️</span><span class="codex-title">The Battle</span>
+                <div class="codex-text">Every wave, every boss, every enemy—faced together. SJ and Nikit guided. Peepee and Niktator executed. Teamwork transcends silicon.</div>
+            </div>
+            
+            <div class="codex-entry">
+                <span class="codex-icon">🏆</span><span class="codex-title">The Victory</span>
+                <div class="codex-text">v100 isn't the end. It's proof. Proof that creation beats destruction. That siblings beat enemies. Always. 🐕🤝🔫</div>
+            </div>
+            
+            <button class="skill-close" onclick="closeCodex()">CLOSE</button>
         </div>
         
         <div class="story-panel" id="story-panel">
@@ -1234,6 +1293,18 @@
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
         }
+        
+        // Codex system
+        function showCodex() { document.getElementById('codex-panel').classList.add('visible'); }
+        function closeCodex() { document.getElementById('codex-panel').classList.remove('visible'); }
+        
+        // Player ID system (multiplayer prep)
+        let playerId = localStorage.getItem('ai_roasters_player_id');
+        if (!playerId) {
+            playerId = 'P' + Math.random().toString(36).substring(2, 8).toUpperCase();
+            localStorage.setItem('ai_roasters_player_id', playerId);
+        }
+        document.getElementById('player-id').textContent = 'ID: ' + playerId;
         
         // Procedural music system
         let musicPlaying = false;
