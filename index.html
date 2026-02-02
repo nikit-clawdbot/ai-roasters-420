@@ -21,7 +21,9 @@
         .player-eyes { position: absolute; top: 12px; display: flex; gap: 6px; left: 50%; transform: translateX(-50%); }
         .player-eye { width: 5px; height: 5px; background: #ff0000; border-radius: 50%; box-shadow: 0 0 5px #ff0000; }
         
-        .enemy { position: absolute; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: transform 0.1s; }
+        .enemy { position: absolute; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: transform 0.1s; flex-direction: column; }
+        .enemy-hp { width: 30px; height: 4px; background: rgba(0,0,0,0.5); border-radius: 2px; margin-top: 2px; overflow: hidden; }
+        .enemy-hp-fill { height: 100%; background: linear-gradient(90deg, #ff0000, #ff4444); transition: width 0.2s; }
         .enemy.normal { width: 35px; height: 35px; background: linear-gradient(135deg, #8800ff, #aa00ff); box-shadow: 0 0 15px rgba(136,0,255,0.5); font-size: 18px; }
         .enemy.fast { width: 25px; height: 25px; background: linear-gradient(135deg, #ff8800, #ffaa00); box-shadow: 0 0 15px rgba(255,136,0,0.5); font-size: 14px; }
         .enemy.tank { width: 50px; height: 50px; background: linear-gradient(135deg, #00aa44, #00ff66); box-shadow: 0 0 15px rgba(0,255,100,0.5); font-size: 24px; }
@@ -185,7 +187,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v37 — WEAPONS</div>
+        <div class="menu-version">v38 — ENEMY HP BARS</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('boss')">👹 BOSS RUSH</button>
         <button class="menu-btn" onclick="startGame('endless')">∞ ENDLESS</button>
@@ -307,7 +309,7 @@
             const et = enemyTypes[type];
             const el = document.createElement('div');
             el.className = 'enemy ' + type;
-            el.textContent = et.emoji;
+            el.innerHTML = '<span>' + et.emoji + '</span><div class="enemy-hp"><div class="enemy-hp-fill" style="width:100%"></div></div>';
             
             // Spawn from edges
             const side = Math.floor(Math.random() * 4);
@@ -474,6 +476,10 @@
                     const isCrit = Math.random() < 0.2;
                     const damage = isCrit ? w.damage * 2.5 : w.damage;
                     e.hp -= damage;
+                    
+                    // Update health bar
+                    const hpBar = e.el.querySelector('.enemy-hp-fill');
+                    if (hpBar) hpBar.style.width = Math.max(0, (e.hp / e.maxHp * 100)) + '%';
                     
                     // Show damage number
                     showDamageNumber(e.x, e.y, Math.floor(damage), isCrit);
