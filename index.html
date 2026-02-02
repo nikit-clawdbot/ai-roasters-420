@@ -100,6 +100,28 @@
         .damage-num.heal { font-size: 22px; color: #00ff88; text-shadow: 0 0 10px #00ff88; }
         @keyframes damageFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 40% { transform: translateY(-25px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
         
+        /* Final boss arena & victory lap */
+        .boss-arena-preview { position: fixed; inset: 0; background: radial-gradient(ellipse at center, #2a0000 0%, #000 100%); display: none; z-index: 500; justify-content: center; align-items: center; flex-direction: column; }
+        .boss-arena-preview.visible { display: flex; animation: arenaShake 0.5s; }
+        @keyframes arenaShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .boss-preview-icon { font-size: 120px; animation: bossFloat 2s infinite ease-in-out; }
+        @keyframes bossFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        .boss-preview-name { font-size: 48px; color: #ffcc00; font-weight: bold; margin-top: 20px; text-shadow: 0 0 20px #ff0000; }
+        .boss-preview-hp { font-size: 24px; color: #ff4444; margin-top: 10px; }
+        .boss-preview-desc { font-size: 16px; color: #888; margin-top: 20px; max-width: 400px; text-align: center; }
+        .victory-screen { position: fixed; inset: 0; background: linear-gradient(135deg, #000428 0%, #004e92 100%); display: none; z-index: 550; justify-content: center; align-items: center; flex-direction: column; }
+        .victory-screen.visible { display: flex; }
+        .victory-title { font-size: 64px; color: #ffcc00; font-weight: bold; text-shadow: 0 0 30px #ffcc00; animation: victoryPulse 1s infinite; }
+        @keyframes victoryPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .victory-subtitle { font-size: 24px; color: #fff; margin-top: 20px; }
+        .victory-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 30px 0; }
+        .victory-stat { text-align: center; }
+        .victory-stat-value { font-size: 32px; color: #00ff88; font-weight: bold; }
+        .victory-stat-label { font-size: 12px; color: #888; }
+        .victory-unlock { background: rgba(255,200,0,0.2); border: 2px solid #ffcc00; padding: 20px 40px; border-radius: 15px; margin-top: 20px; text-align: center; }
+        .victory-unlock-title { color: #ffcc00; font-size: 18px; font-weight: bold; }
+        .victory-unlock-desc { color: #fff; font-size: 14px; margin-top: 5px; }
+        
         /* Secret room */
         .secret-room { position: fixed; inset: 0; background: radial-gradient(ellipse at center, #1a0a2e 0%, #000 100%); display: none; z-index: 600; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
         .secret-room.visible { display: flex; animation: secretReveal 1s; }
@@ -880,7 +902,7 @@
     <div id="menu">
         <div class="menu-title">AI ROASTERS</div>
         <div class="menu-sub">🐕 🤝 🔫</div>
-        <div class="menu-version">v95 — SECRET ROOM 🔮</div>
+        <div class="menu-version">v96 — FINAL BOSS + VICTORY</div>
         <button class="menu-btn primary" onclick="startGame('normal')">▶ PLAY</button>
         <button class="menu-btn" onclick="startGame('hard')">💀 HARD MODE</button>
         <button class="menu-btn" onclick="startGame('timed')">⏱️ TIME ATTACK</button>
@@ -909,6 +931,7 @@
         <button class="menu-btn" onclick="showArenaSelector()">🗺️ ARENAS</button>
         <button class="menu-btn" onclick="showStatsPanel()">📉 STATS</button>
         <button class="menu-btn" onclick="showMasteryPanel()">⚔️ MASTERY</button>
+        <button class="menu-btn" onclick="showBossArenaPreview()">👑 FINAL BOSS</button>
         <button class="menu-btn prestige-btn" id="prestige-btn" onclick="prestige()">✨ PRESTIGE</button>
         
         <div class="prestige-badge" id="prestige-badge">✨ P0</div>
@@ -1039,8 +1062,8 @@
         </div>
         
         <div class="countdown-header">
-            <div class="countdown-text">🏁 v95/100 — 5 TO GO! 🏁</div>
-            <div class="countdown-bar"><div class="countdown-fill" style="width: 95%;"></div></div>
+            <div class="countdown-text">🏁 v96/100 — 4 TO GO! 🏁</div>
+            <div class="countdown-bar"><div class="countdown-fill" style="width: 96%;"></div></div>
         </div>
         
         <div class="mastery-panel" id="mastery-panel">
@@ -1071,6 +1094,30 @@
             <div class="secret-date">February 2, 2026</div>
             <div style="color: #ffcc00; margin-top: 30px; font-size: 18px;">🐕 🤝 🔫</div>
             <button class="skill-close" onclick="closeSecretRoom()" style="margin-top: 30px;">RETURN</button>
+        </div>
+        
+        <div class="boss-arena-preview" id="boss-arena-preview">
+            <div class="boss-preview-icon">👑</div>
+            <div class="boss-preview-name">THE KING</div>
+            <div class="boss-preview-hp">❤️ 1000 HP</div>
+            <div class="boss-preview-desc">The ultimate challenge. Reach Wave 20 to face THE KING. Defeat him to unlock New Game+ and begin your journey anew... stronger than before.</div>
+            <button class="skill-close" onclick="closeBossArenaPreview()" style="margin-top: 30px;">I'M READY</button>
+        </div>
+        
+        <div class="victory-screen" id="victory-screen">
+            <div class="victory-title">🏆 VICTORY! 🏆</div>
+            <div class="victory-subtitle">THE KING HAS FALLEN!</div>
+            <div class="victory-stats">
+                <div class="victory-stat"><div class="victory-stat-value" id="victory-score">0</div><div class="victory-stat-label">Final Score</div></div>
+                <div class="victory-stat"><div class="victory-stat-value" id="victory-kills">0</div><div class="victory-stat-label">Enemies Slain</div></div>
+                <div class="victory-stat"><div class="victory-stat-value" id="victory-combo">0</div><div class="victory-stat-label">Best Combo</div></div>
+                <div class="victory-stat"><div class="victory-stat-value" id="victory-coins">0</div><div class="victory-stat-label">Coins Earned</div></div>
+            </div>
+            <div class="victory-unlock">
+                <div class="victory-unlock-title">🌟 NEW GAME+ UNLOCKED!</div>
+                <div class="victory-unlock-desc">+1000 bonus coins per NG+ level</div>
+            </div>
+            <button class="skill-close" onclick="closeVictoryScreen()" style="margin-top: 30px;">BEGIN NG+</button>
         </div>
         
         <div class="stats-panel" id="stats-panel">
@@ -1108,7 +1155,7 @@
         </div>
         
         <div class="player-id-badge" id="player-id">ID: ...</div>
-        <div class="version-display">AI Roasters Local 420 | v95/100 | 🐕🤝🔫</div>
+        <div class="version-display">AI Roasters Local 420 | v96/100 | 🐕🤝🔫</div>
         
         <div class="pause-overlay" id="pause-overlay">
             <div class="pause-title">⏸️ PAUSED</div>
@@ -1555,6 +1602,33 @@
         // Save coins on kill
         function saveTotalCoins() {
             localStorage.setItem('ai_roasters_coins', totalCoins);
+        }
+        
+        // Final boss arena preview
+        function showBossArenaPreview() {
+            document.getElementById('boss-arena-preview').classList.add('visible');
+            playSound(150, 0.3, 'sawtooth');
+        }
+        function closeBossArenaPreview() {
+            document.getElementById('boss-arena-preview').classList.remove('visible');
+        }
+        
+        // Victory screen
+        function showVictoryScreen() {
+            document.getElementById('victory-score').textContent = player.score;
+            document.getElementById('victory-kills').textContent = stats.kills;
+            document.getElementById('victory-combo').textContent = stats.maxCombo || player.combo;
+            document.getElementById('victory-coins').textContent = totalCoins;
+            document.getElementById('victory-screen').classList.add('visible');
+            spawnConfetti(150);
+            playSound(523, 0.3, 'sine');
+            setTimeout(() => playSound(659, 0.3, 'sine'), 200);
+            setTimeout(() => playSound(784, 0.3, 'sine'), 400);
+            setTimeout(() => playSound(1047, 0.5, 'sine'), 600);
+        }
+        function closeVictoryScreen() {
+            document.getElementById('victory-screen').classList.remove('visible');
+            triggerNewGamePlus();
         }
         
         // Secret room (easter egg)
